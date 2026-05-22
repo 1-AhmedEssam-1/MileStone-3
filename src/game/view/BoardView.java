@@ -1,6 +1,7 @@
 package game.view;
 
 import game.controller.GamePlay;
+import game.controller.Main;
 import game.engine.Constants;
 import game.engine.Game;
 import game.engine.Role;
@@ -54,6 +55,10 @@ public class BoardView {
 	private Label opponentRoleTagLabel;
 	private Label opponentTurnStatusLabel;
 	private Label opponentStatusConditionLabel; // 🆕 Permanent dynamic condition tag
+	
+	//both 
+	private Label playerEnergyValueLabel;
+	private Label oppEnergyValueLabel;
 	//private ImageView oppCanister;
 	// ── Mid-control Panels ────────────────────────────────────────
 	private Label turnLabel;
@@ -66,6 +71,7 @@ public class BoardView {
 		this.stage = stage;
 		this.controller = controller;
 		this.game = game;
+		this.stage.setFullScreen(true);
 	}
 
 	public void show() {
@@ -281,16 +287,22 @@ public class BoardView {
 
 		VBox playerInfo = new VBox(2, playerNameLabel, playerRoleTagLabel, playerTurnStatusLabel, playerStatusConditionLabel);
 		playerInfo.setAlignment(Pos.CENTER_LEFT);
-		playerEnergyCanister = new ProgressBar();
-		playerEnergyCanister.setProgress(1.0);
+		playerEnergyCanister = new ProgressBar(1.0);
+		StackPane p1CanisterLayout = createScreamCanisterView(playerEnergyCanister);
+		playerEnergyValueLabel = new Label("1000 / 1000 ⚡");
+		playerEnergyValueLabel.setStyle("-fx-text-fill: #00ff99; -fx-font-weight: bold; -fx-font-size: 13px;");
+		//playerEnergyCanister.setProgress(1.0);
 		//playerEnergyCanister.setPrefWidth(120);
+		playerEnergyCanister.getStyleClass().add("scream-canister-bar");
 		playerEnergyCanister.setPrefWidth(140);
 		playerEnergyCanister.setPrefHeight(18);
 		playerEnergyCanister.setStyle(
 		    "-fx-accent: #00ffcc;"
 		);
+		VBox p1CanisterGroup = new VBox(4, p1CanisterLayout, playerEnergyValueLabel);
+		p1CanisterGroup.setAlignment(Pos.CENTER);
 
-		HBox playerCard = new HBox(12, playerAvatar, playerInfo,playerEnergyCanister);
+		HBox playerCard = new HBox(12, playerAvatar, playerInfo,p1CanisterGroup);
 		playerCard.setAlignment(Pos.CENTER_LEFT);
 		playerCard.getStyleClass().add("bottom-player-card");
 		playerCard.setPadding(new Insets(10, 20, 10, 16));
@@ -345,8 +357,16 @@ public class BoardView {
 
 		VBox oppInfo = new VBox(2, opponentNameLabel, opponentRoleTagLabel, opponentTurnStatusLabel, opponentStatusConditionLabel);
 		oppInfo.setAlignment(Pos.CENTER_RIGHT);
-		oppEnergyCanister = new ProgressBar();
-		oppEnergyCanister.setProgress(1.0);
+		oppEnergyCanister = new ProgressBar(1.0);
+		StackPane p2CanisterLayout = createScreamCanisterView(oppEnergyCanister);
+		oppEnergyValueLabel = new Label("1000 / 1000 ⚡");
+		oppEnergyValueLabel.setStyle("-fx-text-fill: #00ff99; -fx-font-weight: bold; -fx-font-size: 13px;");
+
+		// 🆕 Wrap canister layout and value text vertically together
+		VBox p2CanisterGroup = new VBox(4, p2CanisterLayout, oppEnergyValueLabel);
+		p2CanisterGroup.setAlignment(Pos.CENTER);
+		//oppEnergyCanister.setProgress(1.0);
+		oppEnergyCanister.getStyleClass().add("scream-canister-bar");
 		oppEnergyCanister.setPrefWidth(120);
 
 		oppEnergyCanister.setPrefWidth(140);
@@ -356,7 +376,7 @@ public class BoardView {
 		    "-fx-accent: #00ffcc;"
 		);
 		
-		HBox oppCard = new HBox(12,oppEnergyCanister, oppInfo, oppAvatar);
+		HBox oppCard = new HBox(12,p2CanisterGroup, oppInfo, oppAvatar);
 		oppCard.setAlignment(Pos.CENTER_RIGHT);
 		oppCard.getStyleClass().add("bottom-opponent-card");
 		oppCard.setPadding(new Insets(10, 16, 10, 20));
@@ -545,6 +565,8 @@ public class BoardView {
 		
 		updateCanisterIcon(p1, playerEnergyCanister);
 		updateCanisterIcon(p2, oppEnergyCanister);
+		playerEnergyValueLabel.setText("Energy : "+(int)p1.getEnergy() + " ⚡");
+		oppEnergyValueLabel.setText("Energy : "+(int)p2.getEnergy() + " ⚡");
 		
 	}
 
@@ -593,27 +615,87 @@ public class BoardView {
 	}
 	// too check energy level ranges and selectr the correct canister image
 	private void updateCanisterIcon(Monster m, ProgressBar bar) {
-
 	    if (m == null || bar == null) return;
 
+	    // 1. Calculate progress fraction (0.0 to 1.0)
 	    double progress = Math.max(0, m.getEnergy() / 1000.0);
-
 	    bar.setProgress(progress);
 
+	    // 2. Safe check for the internal sub-component
+	    javafx.scene.Node innerBarFill = bar.lookup(".bar");
+
+	    // Define our dynamic colors
+	    String colorStyle;
 	    if (progress > 0.65) {
-
-	        bar.setStyle("-fx-accent: #00ff99;");
-
+	        colorStyle = "-fx-background-color: linear-gradient(to right, rgba(0, 255, 153, 0.8), rgba(0, 255, 204, 0.6));";
 	    } else if (progress > 0.25) {
-
-	        bar.setStyle("-fx-accent: #ffd633;");
-
+	        colorStyle = "-fx-background-color: linear-gradient(to right, rgba(255, 214, 51, 0.8), rgba(255, 170, 0, 0.6));";
 	    } else {
+	        colorStyle = "-fx-background-color: linear-gradient(to right, rgba(255, 68, 68, 0.8), rgba(204, 0, 0, 0.6));";
+	    }
 
-	        bar.setStyle("-fx-accent: #ff4444;");
+	    // 3. 🌟 THE SAFETY CHECK SHIELD 🌟
+	    if (innerBarFill != null) {
+	        // If it's already rendered on screen, color the liquid directly
+	        innerBarFill.setStyle(colorStyle);
+	    } else {
+	        // Fallback: Apply an inline rule to the progress bar accent directly until it pulses
+	        if (progress > 0.65) {
+	            bar.setStyle("-fx-accent: #00ff99;");
+	        } else if (progress > 0.25) {
+	            bar.setStyle("-fx-accent: #ffd633;");
+	        } else {
+	            bar.setStyle("-fx-accent: #ff4444;");
+	        }
 	    }
 	}
+	
+	private StackPane createScreamCanisterView(ProgressBar progressBar) {
+	    StackPane container = new StackPane();
+	    container.setPrefSize(160, 60);
+	    container.setMaxSize(160, 60);
 
+	    // 1. Configure the progress bar to sit perfectly inside the glass chamber
+	    progressBar.getStyleClass().add("scream-canister-bar");
+	    progressBar.setPrefWidth(160);
+	    progressBar.setPrefHeight(90);
+	    
+	    // Insets mimic the CSS margins programmatically to keep the fluid inside the caps
+	    progressBar.setPadding(new Insets(20, 22, 10, 22)); 
+
+	    // 2. Load the canister frame mask image using Java's absolute resource path
+	    ImageView canisterFrame = new ImageView();
+	    try {
+	        // This looks directly inside your src/assets/ folder at runtime
+	        URL imgUrl = getClass().getResource("/assets/canister.png"); 
+	        if (imgUrl != null) {
+	            canisterFrame.setImage(new Image(imgUrl.toExternalForm()));
+	        } else {
+	            System.err.println("⚠️ Could not find canister.png in assets folder!");
+	        }
+	    } catch (Exception e) {
+	        System.err.println("Error loading canister image: " + e.getMessage());
+	    }
+	    
+	    canisterFrame.setFitWidth(160);
+	    canisterFrame.setFitHeight(60);
+	    canisterFrame.setPreserveRatio(false);
+	    canisterFrame.setSmooth(true);
+	    canisterFrame.setPickOnBounds(false); // Allows clicks to pass through transparent bits
+
+	    // Layer them up: Progress bar fill stands underneath, canister outline overlays on top
+	    container.getChildren().addAll(progressBar, canisterFrame);
+	    return container;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	private double clampEnergy(Monster m) {
 		double max = 1000.0;
 		double pct = m.getEnergy();
@@ -782,11 +864,11 @@ public class BoardView {
 	    closeButton.setOnAction(e -> {
 	        try {
 	            // 🆕 Open the Start Screen stage window first
-	            StartScreen menu = new StartScreen();
-	            menu.show();
+	            Main menu = new Main();
+	            menu.showMenu();
 	            
 	            // 🆕 Close the current running board stage game window loop
-	            stage.close();
+	            this.stage.close();
 	        } catch (Exception ex) {
 	            System.err.println("Error returning to StartScreen: " + ex.getMessage());
 	            ex.printStackTrace();
