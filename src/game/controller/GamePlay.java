@@ -34,7 +34,7 @@ public class GamePlay {
             
             // 3. Render the board view
             this.boardView.show();
-            
+            primaryStage.setFullScreen(true);
          // 🆕 Register Cheat Hotkeys onto the Stage's Scene
             primaryStage.getScene().addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
                 switch (event.getCode()) {
@@ -47,6 +47,13 @@ public class GamePlay {
                         event.consume();
                         break;
                     default:
+                        break;
+                    case X:
+                        // ❌ Cleanly exits the entire JavaFX application platform and processes
+                        System.out.println("🚪 Exiting game via 'X' hotkey...");
+                        javafx.application.Platform.exit();
+                        System.exit(0); 
+                        event.consume();
                         break;
                 }
             });

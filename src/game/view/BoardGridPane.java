@@ -192,12 +192,13 @@ public class BoardGridPane extends GridPane {
                 
                 if (contains(Constants.CONVEYOR_CELL_INDICES, cellNumber)) {
                     // Cast to ConveyorBelt if your model cell stores destination data
+                	 game.engine.cells.ConveyorBelt cb = (game.engine.cells.ConveyorBelt) cell;
+                     int destination = -1; 
                     if (cell instanceof game.engine.cells.ConveyorBelt) {
-                        game.engine.cells.ConveyorBelt cb = (game.engine.cells.ConveyorBelt) cell;
                         
                         // Assuming your ConveyorBelt engine class has a target/destination getter (e.g., getTargetCell() or getTargetIndex())
                         // Adjust the method name below to match your exact backend ConveyorBelt class implementation!
-                        int destination = cb.getEffect(); 
+                        destination = cb.getEffect(); 
                         
                         Tooltip conveyorTooltip = new Tooltip("Conveyor Belt ⚙️\nSpeeds you up to Cell: " + destination);
                         conveyorTooltip.getStyleClass().add("conveyor-tooltip");
@@ -209,6 +210,56 @@ public class BoardGridPane extends GridPane {
                         // Fallback generic tooltip if target lookup relies on index mapping
                         Tooltip conveyorTooltip = new Tooltip("Conveyor Belt ⚙️\nHover over to check track.");
                         Tooltip.install(cellPane, conveyorTooltip);
+                    }
+                    if (destination != -1) {
+                        final int targetDest = destination;
+                        cellPane.setOnMouseEntered(e -> {
+                            StackPane destPane = getCellPaneByNumber(targetDest);
+                            if (destPane != null) {
+                                destPane.getStyleClass().add("cell-destination-glow");
+                            }
+                        });
+                        cellPane.setOnMouseExited(e -> {
+                            StackPane destPane = getCellPaneByNumber(targetDest);
+                            if (destPane != null) {
+                                destPane.getStyleClass().remove("cell-destination-glow");
+                            }
+                        });
+                    } 
+                }
+                
+                
+                if (contains(Constants.SOCK_CELL_INDICES, cellNumber)) {
+                    // Assuming SockCell/HazardCell shifts a player backwards by an exact layout value
+                    // Update 'cb.getEffect()' or use your specific structural backend rule to find the drop point
+                    int destination = -1; 
+                    
+                    // Example implementation check: if your backend structure evaluates logic similarly to Conveyor
+                    if (cell instanceof game.engine.cells.ContaminationSock) { // Adjust class type to your exact milestone model name
+                        destination = ((game.engine.cells.ContaminationSock) cell).getEffect() + cellNumber; 
+                        
+                        Tooltip conveyorTooltip = new Tooltip("Contamination Sock \nTeleports you to Cell: " + destination);
+                        conveyorTooltip.getStyleClass().add("conveyor-tooltip");
+                        
+                        // Setting a snappy show-delay makes the UX feel responsive and smooth
+                        //conveyorTooltip.setShowDelay(Duration.millis(150));
+                        Tooltip.install(cellPane, conveyorTooltip);
+                    } 
+
+                    if (destination != -1) {
+                        final int targetDest = destination;
+                        cellPane.setOnMouseEntered(e -> {
+                            StackPane destPane = getCellPaneByNumber(targetDest);
+                            if (destPane != null) {
+                                destPane.getStyleClass().add("cell-hazard-destination-glow");
+                            }
+                        });
+                        cellPane.setOnMouseExited(e -> {
+                            StackPane destPane = getCellPaneByNumber(targetDest);
+                            if (destPane != null) {
+                                destPane.getStyleClass().remove("cell-hazard-destination-glow");
+                            }
+                        });
                     }
                 }
 
@@ -334,6 +385,23 @@ public class BoardGridPane extends GridPane {
         box.getChildren().add(avatar);
 
         return box;
+    }
+    private StackPane getCellPaneByNumber(int cellNumber) {
+        for (javafx.scene.Node node : getChildren()) {
+            if (node instanceof StackPane) {
+                // Check if the node's properties or positioning matches our target cell number
+                Integer row = GridPane.getRowIndex(node);
+                Integer col = GridPane.getColumnIndex(node);
+                if (row != null && col != null) {
+                    // Convert back from grid coordinates to absolute board row
+                    int boardRow = (ROWS - 1) - row;
+                    if (getCellNumber(boardRow, col) == cellNumber) {
+                        return (StackPane) node;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public void refresh() {

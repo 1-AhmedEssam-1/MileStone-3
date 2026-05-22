@@ -1,6 +1,7 @@
 package game.view;
 
 import game.controller.GamePlay;
+import game.controller.Main;
 import game.engine.Constants;
 import game.engine.Game;
 import game.engine.Role;
@@ -51,6 +52,8 @@ public class BoardView {
 	private Label playerRoleTagLabel;
 	private Label playerTurnStatusLabel;
 	private Label playerStatusConditionLabel; // 🆕 Permanent dynamic condition tag
+	private Label playerEnergyValueLabel;
+	private Label oppEnergyValueLabel;
 	//private ImageView playerCanister;
 	private ProgressBar playerEnergyCanister;
 	private ProgressBar oppEnergyCanister;
@@ -71,6 +74,7 @@ public class BoardView {
 		this.stage = stage;
 		this.controller = controller;
 		this.game = game;
+		this.stage.setFullScreen(true);
 	}
 
 	public void show() {
@@ -144,7 +148,7 @@ public class BoardView {
         BorderPane panel = new BorderPane();
         panel.getStyleClass().add("stats-panel");
         panel.setPrefWidth(220);
-        panel.setMinWidth(220);
+        panel.setMinWidth(200);
         panel.setMaxWidth(220);
         panel.setPadding(new Insets(24, 15, 24, 15)); // Snug padding to protect horizontal spacing
 
@@ -339,120 +343,134 @@ public class BoardView {
 	//        return row;
 	//    }
 
-	private HBox buildBottomBar(Game game) {
-		// ── Player 1 View Construction Setup ──
-		StackPane playerAvatar = AvatarUtil.buildAvatar(game.getPlayer(), 70);
-		Label p1Badge = new Label("P1");
-		p1Badge.getStyleClass().add("player-badge-p1");
-		StackPane.setAlignment(p1Badge, Pos.TOP_LEFT);
-		playerAvatar.getChildren().add(p1Badge);
+		private HBox buildBottomBar(Game game) {
+			// ── Player 1 View Construction Setup ──
+			StackPane playerAvatar = AvatarUtil.buildAvatar(game.getPlayer(), 70);
+			Label p1Badge = new Label("P1");
+			p1Badge.getStyleClass().add("player-badge-p1");
+			StackPane.setAlignment(p1Badge, Pos.TOP_LEFT);
+			playerAvatar.getChildren().add(p1Badge);
 
-		playerNameLabel = new Label(game.getPlayer().getName());
-		playerNameLabel.getStyleClass().add("bottom-player-name");
+			playerNameLabel = new Label(game.getPlayer().getName());
+			playerNameLabel.getStyleClass().add("bottom-player-name");
 
-		playerRoleTagLabel = new Label(game.getPlayer().getRole() + "  A");
-		playerRoleTagLabel.getStyleClass().add("bottom-role-tag");
+			playerRoleTagLabel = new Label(game.getPlayer().getRole() + "  A");
+			playerRoleTagLabel.getStyleClass().add("bottom-role-tag");
 
-		playerTurnStatusLabel = new Label("Turn Active");
-		playerTurnStatusLabel.getStyleClass().add("bottom-turn-active");
+			playerTurnStatusLabel = new Label("Turn Active");
+			playerTurnStatusLabel.getStyleClass().add("bottom-turn-active");
 
-		// 🆕 Setup status label for P1 card
-		playerStatusConditionLabel = new Label("● NORMAL");
-		playerStatusConditionLabel.getStyleClass().add("bottom-condition-normal");
+			// 🆕 Setup status label for P1 card
+			playerStatusConditionLabel = new Label("● NORMAL");
+			playerStatusConditionLabel.getStyleClass().add("bottom-condition-normal");
 
-		VBox playerInfo = new VBox(2, playerNameLabel, playerRoleTagLabel, playerTurnStatusLabel, playerStatusConditionLabel);
-		playerInfo.setAlignment(Pos.CENTER_LEFT);
-		playerEnergyCanister = new ProgressBar();
-		playerEnergyCanister.setProgress(1.0);
-		//playerEnergyCanister.setPrefWidth(120);
-		playerEnergyCanister.setPrefWidth(140);
-		playerEnergyCanister.setPrefHeight(18);
-		playerEnergyCanister.setStyle(
-		    "-fx-accent: #00ffcc;"
-		);
+			VBox playerInfo = new VBox(2, playerNameLabel, playerRoleTagLabel, playerTurnStatusLabel, playerStatusConditionLabel);
+			playerInfo.setAlignment(Pos.CENTER_LEFT);
+			playerEnergyCanister = new ProgressBar(1.0);
+			StackPane p1CanisterLayout = createScreamCanisterView(playerEnergyCanister);
+			playerEnergyValueLabel = new Label("1000 / 1000 ⚡");
+			playerEnergyValueLabel.setStyle("-fx-text-fill: #00ff99; -fx-font-weight: bold; -fx-font-size: 13px;");
+			//playerEnergyCanister.setProgress(1.0);
+			//playerEnergyCanister.setPrefWidth(120);
+			playerEnergyCanister.getStyleClass().add("scream-canister-bar");
+			playerEnergyCanister.setPrefWidth(140);
+			playerEnergyCanister.setPrefHeight(18);
+			playerEnergyCanister.setStyle(
+			    "-fx-accent: #00ffcc;"
+			);
+			VBox p1CanisterGroup = new VBox(4, p1CanisterLayout, playerEnergyValueLabel);
+			p1CanisterGroup.setAlignment(Pos.CENTER);
 
-		HBox playerCard = new HBox(12, playerAvatar, playerInfo,playerEnergyCanister);
-		playerCard.setAlignment(Pos.CENTER_LEFT);
-		playerCard.getStyleClass().add("bottom-player-card");
-		playerCard.setPadding(new Insets(10, 20, 10, 16));
-		HBox.setHgrow(playerCard, Priority.ALWAYS);
+			HBox playerCard = new HBox(12, playerAvatar, playerInfo,p1CanisterGroup);
+			playerCard.setAlignment(Pos.CENTER_LEFT);
+			playerCard.getStyleClass().add("bottom-player-card");
+			playerCard.setPadding(new Insets(10, 20, 10, 16));
+			HBox.setHgrow(playerCard, Priority.ALWAYS);
 
 
 
-		// ── Turn Management Setup ──
-		diceView = new DiceView(); // 🆕 Simply instantiate the custom view
-		turnLabel = new Label("🎯 " + game.getCurrent().getName() + "'s turn");
-		turnLabel.getStyleClass().add("bottom-turn-label");
+			// ── Turn Management Setup ──
+			diceView = new DiceView(); // 🆕 Simply instantiate the custom view
+			turnLabel = new Label("🎯 " + game.getCurrent().getName() + "'s turn");
+			turnLabel.getStyleClass().add("bottom-turn-label");
 
-		//Button rollBtn = new Button("ROLL DICE");
-		// ... (styling stays the same)
-		diceView.setOnMouseClicked(e -> controller.handleRollDiceAction());
+			//Button rollBtn = new Button("ROLL DICE");
+			// ... (styling stays the same)
+			diceView.setOnMouseClicked(e -> controller.handleRollDiceAction());
 
-		// ⚡ Power Up Button Setup
-		Button powerupBtn = new Button("USE POWERUP");
-		powerupBtn.getStyleClass().add("powerup-button");
-		powerupBtn.setPrefWidth(120);
-		powerupBtn.setPrefHeight(42);
-		powerupBtn.setOnAction(e -> controller.handleUsePowerupAction());
+			// ⚡ Power Up Button Setup
+			Button powerupBtn = new Button("USE POWERUP");
+			powerupBtn.getStyleClass().add("powerup-button");
+			powerupBtn.setPrefWidth(120);
+			powerupBtn.setPrefHeight(42);
+			powerupBtn.setOnAction(e -> controller.handleUsePowerupAction());
 
-		// 🆕 Side-by-Side Row: Packs the dice face image and both buttons together horizontally
-		centerControlsRow = new HBox(14, diceView, powerupBtn);
-		centerControlsRow.setAlignment(Pos.CENTER);
+			// 🆕 Side-by-Side Row: Packs the dice face image and both buttons together horizontally
+			centerControlsRow = new HBox(14, diceView, powerupBtn);
+			centerControlsRow.setAlignment(Pos.CENTER);
 
-		// Stack the horizontal controls row directly on top of the text label
-		 centerBox = new VBox(8, centerControlsRow, turnLabel);
-		centerBox.setAlignment(Pos.CENTER);
-		centerBox.setPadding(new Insets(8, 24, 8, 24));
+			// Stack the horizontal controls row directly on top of the text label
+			 centerBox = new VBox(8, centerControlsRow, turnLabel);
+			centerBox.setAlignment(Pos.CENTER);
+			centerBox.setPadding(new Insets(8, 24, 8, 24));
 
-		// ── Player 2 View Construction Setup ──
-		StackPane oppAvatar = AvatarUtil.buildAvatar(game.getOpponent(), 70);
-		Label p2Badge = new Label("P2");
-		p2Badge.getStyleClass().add("player-badge-p2");
-		StackPane.setAlignment(p2Badge, Pos.TOP_RIGHT);
-		oppAvatar.getChildren().add(p2Badge);
+			// ── Player 2 View Construction Setup ──
+			StackPane oppAvatar = AvatarUtil.buildAvatar(game.getOpponent(), 70);
+			Label p2Badge = new Label("P2");
+			p2Badge.getStyleClass().add("player-badge-p2");
+			StackPane.setAlignment(p2Badge, Pos.TOP_RIGHT);
+			oppAvatar.getChildren().add(p2Badge);
 
-		opponentNameLabel = new Label(game.getOpponent().getName());
-		opponentNameLabel.getStyleClass().add("bottom-player-name");
+			opponentNameLabel = new Label(game.getOpponent().getName());
+			opponentNameLabel.getStyleClass().add("bottom-player-name");
 
-		opponentRoleTagLabel = new Label(game.getOpponent().getRole() + "  B");
-		opponentRoleTagLabel.getStyleClass().add("bottom-role-tag");
+			opponentRoleTagLabel = new Label(game.getOpponent().getRole() + "  B");
+			opponentRoleTagLabel.getStyleClass().add("bottom-role-tag");
 
-		opponentTurnStatusLabel = new Label("Waiting...");
-		opponentTurnStatusLabel.getStyleClass().add("bottom-turn-waiting");
+			opponentTurnStatusLabel = new Label("Waiting...");
+			opponentTurnStatusLabel.getStyleClass().add("bottom-turn-waiting");
 
-		// 🆕 Setup status label for P2 card
-		opponentStatusConditionLabel = new Label("● NORMAL");
-		opponentStatusConditionLabel.getStyleClass().add("bottom-condition-normal");
+			// 🆕 Setup status label for P2 card
+			opponentStatusConditionLabel = new Label("● NORMAL");
+			opponentStatusConditionLabel.getStyleClass().add("bottom-condition-normal");
 
-		VBox oppInfo = new VBox(2, opponentNameLabel, opponentRoleTagLabel, opponentTurnStatusLabel, opponentStatusConditionLabel);
-		oppInfo.setAlignment(Pos.CENTER_RIGHT);
-		oppEnergyCanister = new ProgressBar();
-		oppEnergyCanister.setProgress(1.0);
-		oppEnergyCanister.setPrefWidth(120);
+			VBox oppInfo = new VBox(2, opponentNameLabel, opponentRoleTagLabel, opponentTurnStatusLabel, opponentStatusConditionLabel);
+			oppInfo.setAlignment(Pos.CENTER_RIGHT);
+			oppEnergyCanister = new ProgressBar(1.0);
+			StackPane p2CanisterLayout = createScreamCanisterView(oppEnergyCanister);
+			oppEnergyValueLabel = new Label("1000 / 1000 ⚡");
+			oppEnergyValueLabel.setStyle("-fx-text-fill: #00ff99; -fx-font-weight: bold; -fx-font-size: 13px;");
 
-		oppEnergyCanister.setPrefWidth(140);
-		oppEnergyCanister.setPrefHeight(18);
-		
-		oppEnergyCanister.setStyle(
-		    "-fx-accent: #00ffcc;"
-		);
-		
-		HBox oppCard = new HBox(12,oppEnergyCanister, oppInfo, oppAvatar);
-		oppCard.setAlignment(Pos.CENTER_RIGHT);
-		oppCard.getStyleClass().add("bottom-opponent-card");
-		oppCard.setPadding(new Insets(10, 16, 10, 20));
-		HBox.setHgrow(oppCard, Priority.ALWAYS);
+			// 🆕 Wrap canister layout and value text vertically together
+			VBox p2CanisterGroup = new VBox(4, p2CanisterLayout, oppEnergyValueLabel);
+			p2CanisterGroup.setAlignment(Pos.CENTER);
+			//oppEnergyCanister.setProgress(1.0);
+			oppEnergyCanister.getStyleClass().add("scream-canister-bar");
+			oppEnergyCanister.setPrefWidth(120);
 
-		HBox bar = new HBox(0, playerCard, centerBox, oppCard);
-		bar.setAlignment(Pos.CENTER);
-		bar.getStyleClass().add("bottom-bar");
-		bar.setPrefHeight(100);
+			oppEnergyCanister.setPrefWidth(140);
+			oppEnergyCanister.setPrefHeight(18);
+			
+			oppEnergyCanister.setStyle(
+			    "-fx-accent: #00ffcc;"
+			);
+			
+			HBox oppCard = new HBox(12,p2CanisterGroup, oppInfo, oppAvatar);
+			oppCard.setAlignment(Pos.CENTER_RIGHT);
+			oppCard.getStyleClass().add("bottom-opponent-card");
+			oppCard.setPadding(new Insets(10, 16, 10, 20));
+			HBox.setHgrow(oppCard, Priority.ALWAYS);
 
-		// Load the initial static values for the bottom bars
-		refreshBottomCards(game);
+			HBox bar = new HBox(0, playerCard, centerBox, oppCard);
+			bar.setAlignment(Pos.CENTER);
+			bar.getStyleClass().add("bottom-bar");
+			bar.setPrefHeight(100);
 
-		return bar;
-	}
+			// Load the initial static values for the bottom bars
+			refreshBottomCards(game);
+
+			return bar;
+		}
 	///this is callled in the controller
 	public DiceView getDiceView() {
 		return this.diceView;
@@ -584,6 +602,15 @@ public class BoardView {
 			}
 		}
 	}
+	private double clampEnergy(Monster m) {
+		double max = 1000.0;
+		double pct = m.getEnergy();
+		return Math.max(0, pct);
+	}
+
+	private String formatEnergyPct(double pct) {
+		return (int) Math.round(pct * 1.00) + "";
+	}
 	private void updateStatsPanelForMonster(Monster m, Cell cell, Game game) {
 		if (m == null) return;
 
@@ -654,7 +681,47 @@ public class BoardView {
 		
 		updateCanisterIcon(p1, playerEnergyCanister);
 		updateCanisterIcon(p2, oppEnergyCanister);
+		playerEnergyValueLabel.setText("Energy : "+(int)p1.getEnergy() + " ⚡");
+		oppEnergyValueLabel.setText("Energy : "+(int)p2.getEnergy() + " ⚡");
 		
+	}
+	
+	private StackPane createScreamCanisterView(ProgressBar progressBar) {
+	    StackPane container = new StackPane();
+	    container.setPrefSize(160, 60);
+	    container.setMaxSize(160, 60);
+
+	    // 1. Configure the progress bar to sit perfectly inside the glass chamber
+	    progressBar.getStyleClass().add("scream-canister-bar");
+	    progressBar.setPrefWidth(160);
+	    progressBar.setPrefHeight(90);
+	    
+	    // Insets mimic the CSS margins programmatically to keep the fluid inside the caps
+	    progressBar.setPadding(new Insets(20, 22, 10, 22)); 
+
+	    // 2. Load the canister frame mask image using Java's absolute resource path
+	    ImageView canisterFrame = new ImageView();
+	    try {
+	        // This looks directly inside your src/assets/ folder at runtime
+	        URL imgUrl = getClass().getResource("/assets/canister.png"); 
+	        if (imgUrl != null) {
+	            canisterFrame.setImage(new Image(imgUrl.toExternalForm()));
+	        } else {
+	            System.err.println("⚠️ Could not find canister.png in assets folder!");
+	        }
+	    } catch (Exception e) {
+	        System.err.println("Error loading canister image: " + e.getMessage());
+	    }
+	    
+	    canisterFrame.setFitWidth(160);
+	    canisterFrame.setFitHeight(60);
+	    canisterFrame.setPreserveRatio(false);
+	    canisterFrame.setSmooth(true);
+	    canisterFrame.setPickOnBounds(false); // Allows clicks to pass through transparent bits
+
+	    // Layer them up: Progress bar fill stands underneath, canister outline overlays on top
+	    container.getChildren().addAll(progressBar, canisterFrame);
+	    return container;
 	}
 
 	// 🆕 Helper method to sync condition texts and styles onto specific player badges
@@ -702,35 +769,39 @@ public class BoardView {
 	}
 	// too check energy level ranges and selectr the correct canister image
 	private void updateCanisterIcon(Monster m, ProgressBar bar) {
-
 	    if (m == null || bar == null) return;
 
+	    // 1. Calculate progress fraction (0.0 to 1.0)
 	    double progress = Math.max(0, m.getEnergy() / 1000.0);
-
 	    bar.setProgress(progress);
 
+	    // 2. Safe check for the internal sub-component
+	    javafx.scene.Node innerBarFill = bar.lookup(".bar");
+
+	    // Define our dynamic colors
+	    String colorStyle;
 	    if (progress > 0.65) {
-
-	        bar.setStyle("-fx-accent: #00ff99;");
-
+	        colorStyle = "-fx-background-color: linear-gradient(to right, rgba(0, 255, 153, 0.8), rgba(0, 255, 204, 0.6));";
 	    } else if (progress > 0.25) {
-
-	        bar.setStyle("-fx-accent: #ffd633;");
-
+	        colorStyle = "-fx-background-color: linear-gradient(to right, rgba(255, 214, 51, 0.8), rgba(255, 170, 0, 0.6));";
 	    } else {
-
-	        bar.setStyle("-fx-accent: #ff4444;");
+	        colorStyle = "-fx-background-color: linear-gradient(to right, rgba(255, 68, 68, 0.8), rgba(204, 0, 0, 0.6));";
 	    }
-	}
 
-	private double clampEnergy(Monster m) {
-		double max = 1000.0;
-		double pct = m.getEnergy();
-		return Math.max(0, pct);
-	}
-
-	private String formatEnergyPct(double pct) {
-		return (int) Math.round(pct * 1.00) + "";
+	    // 3. 🌟 THE SAFETY CHECK SHIELD 🌟
+	    if (innerBarFill != null) {
+	        // If it's already rendered on screen, color the liquid directly
+	        innerBarFill.setStyle(colorStyle);
+	    } else {
+	        // Fallback: Apply an inline rule to the progress bar accent directly until it pulses
+	        if (progress > 0.65) {
+	            bar.setStyle("-fx-accent: #00ff99;");
+	        } else if (progress > 0.25) {
+	            bar.setStyle("-fx-accent: #ffd633;");
+	        } else {
+	            bar.setStyle("-fx-accent: #ff4444;");
+	        }
+	    }
 	}
 
 
@@ -834,83 +905,133 @@ public class BoardView {
     }
 
 	public void showVictoryOverlay(String winnerName, int position, int energy) {
-	    if (!(stage.getScene().getRoot() instanceof BorderPane)) return;
-	    BorderPane rootPane = (BorderPane) stage.getScene().getRoot();
+	    // 1. Main full-screen translucent overlay container letting the board show through
+	    VBox victoryOverlayContainer = new VBox(20);
+	    victoryOverlayContainer.setAlignment(Pos.CENTER);
+	    victoryOverlayContainer.setPadding(new Insets(30));
+	    victoryOverlayContainer.setStyle("-fx-background-color: rgba(17, 17, 34, 0.75);"); // Dark dimming filter
 
-	    // Prevent duplicate overlays if already showing
-	    if (rootPane.lookup(".victory-card") != null) return;
+	    // Common text glow effect for sharp contrast
+	    String textGlowStyle = "-fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.95), 12, 0.6, 0, 0);";
 
-	    // 1. Semi-transparent overlay to lightly dim the background board grid
-	    StackPane modalityBlocker = new StackPane();
-	    modalityBlocker.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5);");
-	    modalityBlocker.setAlignment(Pos.CENTER);
+	    // 2. Large Header Banner
+	    Label titleLabel = new Label("VICTORY!");
+	    titleLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 52px; -fx-text-fill: #ffcc00; -fx-font-weight: bold;" + textGlowStyle);
+	    
+	    Label subTitleLabel = new Label(winnerName.toUpperCase() + " WINS THE COMPETITION!");
+	    subTitleLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 24px; -fx-text-fill: #ffffff; -fx-font-weight: bold;" + textGlowStyle);
 
-	    // 2. Build a standalone card box with a solid dark purple background and bright borders
-	    VBox winBox = new VBox(25);
-	    winBox.getStyleClass().add("victory-card");
-	    winBox.setStyle(
-	        "-fx-background-color: #1e1b4b; " + 
-	        "-fx-border-color: #00e5d4; " +      
-	        "-fx-border-width: 3px; " +
-	        "-fx-border-radius: 16px; " +
-	        "-fx-background-radius: 16px; " +
-	        "-fx-padding: 40px; " +
-	        "-fx-effect: dropshadow(three-pass-box, rgba(0, 229, 212, 0.4), 20, 0, 0, 0);"
+	    // 3. Side-by-Side Player Profiles Container
+	    HBox profilesLayout = new HBox(40);
+	    profilesLayout.setAlignment(Pos.CENTER);
+	    profilesLayout.setPadding(new Insets(20));
+
+	    // Gather engine monster objects
+	    game.engine.monsters.Monster winnerMonster = game.getWinner();
+	    if (winnerMonster == null) {
+	        winnerMonster = game.getCurrent(); // Fallback safety
+	    }
+	    
+	    // Find the opponent monster instance
+	    game.engine.monsters.Monster opponentMonster = game.getOpponent();
+
+	    // ── WINNER CARD COLUMN ──────────────────────────────────────────────────
+	    VBox winnerCard = new VBox(15);
+	    winnerCard.setAlignment(Pos.CENTER);
+	    winnerCard.setPadding(new Insets(25));
+	    winnerCard.setMinWidth(300);
+	    // Gold tint border for winner card frame
+	    winnerCard.setStyle("-fx-background-color: rgba(255, 255, 255, 0.08); -fx-background-radius: 15px; -fx-border-color: #ffcc00; -fx-border-width: 2px; -fx-border-radius: 15px;");
+
+	    Label winnerHeader = new Label("🏆 WINNER");
+	    winnerHeader.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 22px; -fx-text-fill: #ffcc00; -fx-font-weight: bold;");
+
+	    if (winnerMonster != null) {
+	        StackPane winnerAvatar = AvatarUtil.buildAvatar(winnerMonster, 110);
+	        winnerCard.getChildren().add(winnerAvatar);
+	    }
+
+	    Label winnerStatsLabel = new Label(
+	        "Name: " + (winnerMonster != null ? winnerMonster.getName() : winnerName) + "\n" +
+	        "Final Position: Cell " + position + "\n" +
+	        "Energy Canister: " + energy + " ⚡"
 	    );
-	    winBox.setAlignment(Pos.CENTER);
-	    winBox.setMaxWidth(500);
-	    winBox.setMaxHeight(380);
+	    winnerStatsLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 16px; -fx-text-fill: #ffffff; -fx-text-alignment: center; -fx-line-spacing: 5px; -fx-font-weight: bold;");
+	    winnerCard.getChildren().addAll(winnerHeader, winnerStatsLabel);
 
-	    // 3. Header title label using text colors that contrast nicely on screen
-	    Label titleLabel = new Label("🎉 VICTORY REACHED! 🎉");
-	    titleLabel.setStyle(
-	        "-fx-font-family: 'Bangers'; " +
-	        "-fx-font-size: 38px; " +
-	        "-fx-text-fill: #a8e63d;" 
-	    ); 
+	    // ── OPPONENT CARD COLUMN ────────────────────────────────────────────────
+	    VBox opponentCard = new VBox(15);
+	    opponentCard.setAlignment(Pos.CENTER);
+	    opponentCard.setPadding(new Insets(25));
+	    opponentCard.setMinWidth(300);
+	    // Silver/Gray tint border for opponent card frame
+	    opponentCard.setStyle("-fx-background-color: rgba(255, 255, 255, 0.05); -fx-background-radius: 15px; -fx-border-color: #a0a0a0; -fx-border-width: 1px; -fx-border-radius: 15px;");
 
-	    // 4. Main stats statement body
-	    Label detailsLabel = new Label(
-	        "Congratulations, " + winnerName + "!\n\n" +
-	        "🏆 Final Position: " + position + "\n" +
-	        "⚡ Energy Collected: " + energy + "\n\n" +
-	        "You safely completed the Door Dash loop!"
+	    Label opponentHeader = new Label("🥈 OPPONENT");
+	    opponentHeader.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 20px; -fx-text-fill: #e0e0e0; -fx-font-weight: bold;");
+
+	    if (opponentMonster != null) {
+	        StackPane opponentAvatar = AvatarUtil.buildAvatar(opponentMonster, 110);
+	        opponentCard.getChildren().add(opponentAvatar);
+	    }
+
+	    Label opponentStatsLabel = new Label(
+	        "Name: " + (opponentMonster != null ? opponentMonster.getName() : "Opponent") + "\n" +
+	        "Final Position: Cell " + (opponentMonster != null ? opponentMonster.getPosition() : "N/A") + "\n" +
+	        "Energy Canister: " + (opponentMonster != null ? opponentMonster.getEnergy() : "0") + " ⚡"
 	    );
-	    detailsLabel.setStyle(
-	        "-fx-font-family: 'Nunito'; " +
-	        "-fx-font-size: 16px; " +
-	        "-fx-text-fill: #ffffff; " + 
-	        "-fx-text-alignment: center; " +
-	        "-fx-line-spacing: 6px; " +
-	        "-fx-font-weight: bold;"
-	    );
+	    opponentStatsLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 16px; -fx-text-fill: #cccccc; -fx-text-alignment: center; -fx-line-spacing: 5px; -fx-font-weight: bold;");
+	    opponentCard.getChildren().addAll(opponentHeader, opponentStatsLabel);
 
-	    // 5. Return to Start Window Button
+	    // Add both profiles to the horizontal layout container row
+	    profilesLayout.getChildren().addAll(winnerCard, opponentCard);
+
+	    // 4. Return to Main Menu Action Button
 	    Button closeButton = new Button("BACK TO MAIN MENU");
 	    closeButton.getStyleClass().add("mi-button"); 
+	    closeButton.setPrefWidth(220);
 	    closeButton.setOnAction(e -> {
 	        try {
+
 	            // 🆕 Open the Start Screen stage window first
-	            StartScreen menu = new StartScreen();
-	            menu.show();
+	            Main menu = new Main();
+	            menu.showMenu();
 	            
 	            // 🆕 Close the current running board stage game window loop
+	            this.stage.close();
+
+	            //Main menu = new Main();
 	            stage.close();
+	            //menu.start(stage);
+
 	        } catch (Exception ex) {
-	            System.err.println("Error returning to StartScreen: " + ex.getMessage());
 	            ex.printStackTrace();
-	            stage.close(); // Fallback safety close
+	            stage.close();
 	        }
 	    });
 
-	    // Assemble layout items sequentially
-	    winBox.getChildren().addAll(titleLabel, detailsLabel, closeButton);
-	    modalityBlocker.getChildren().add(winBox);
+	    // 5. Build full scene stack layout view
+	    victoryOverlayContainer.getChildren().addAll(titleLabel, subTitleLabel, profilesLayout, closeButton);
 
-	    // Inject the clean layout modal covering the central workspace
-	    rootPane.setCenter(modalityBlocker);
+	    // 6. Layer the updated container onto the active scene tree safely without swapping windows
+	    if (stage.getScene() != null && stage.getScene().getRoot() instanceof Pane) {
+	        Pane currentRoot = (Pane) stage.getScene().getRoot();
+
+	        if (!(currentRoot instanceof StackPane)) {
+	            StackPane wrapperStack = new StackPane();
+	            javafx.scene.Parent oldRoot = stage.getScene().getRoot();
+	            
+	            stage.getScene().setRoot(new Pane()); // Clean reference link detach
+	            wrapperStack.getChildren().addAll(oldRoot, victoryOverlayContainer);
+	            stage.getScene().setRoot(wrapperStack);
+	        } else {
+	            ((StackPane) currentRoot).getChildren().add(victoryOverlayContainer);
+	        }
+	    } else {
+	        Scene victoryScene = new Scene(victoryOverlayContainer, 1100, 750);
+	        stage.setScene(victoryScene);
+	    }
 	}
-
 
 
 
