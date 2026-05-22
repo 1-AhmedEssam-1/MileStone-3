@@ -807,81 +807,132 @@ public class BoardView {
     }
 
 	public void showVictoryOverlay(String winnerName, int position, int energy) {
-	    if (!(stage.getScene().getRoot() instanceof BorderPane)) return;
-	    BorderPane rootPane = (BorderPane) stage.getScene().getRoot();
+	    // 1. Main full-screen translucent overlay container letting the board show through
+	    VBox victoryOverlayContainer = new VBox(20);
+	    victoryOverlayContainer.setAlignment(Pos.CENTER);
+	    victoryOverlayContainer.setPadding(new Insets(30));
+	    victoryOverlayContainer.setStyle("-fx-background-color: rgba(17, 17, 34, 0.75);"); // Dark dimming filter
 
-	    // Prevent duplicate overlays if already showing
-	    if (rootPane.lookup(".victory-card") != null) return;
+	    // Common text glow effect for sharp contrast
+	    String textGlowStyle = "-fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.95), 12, 0.6, 0, 0);";
 
-	    // 1. Semi-transparent overlay to lightly dim the background board grid
-	    StackPane modalityBlocker = new StackPane();
-	    modalityBlocker.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5);");
-	    modalityBlocker.setAlignment(Pos.CENTER);
+	    // 2. Large Header Banner
+	    Label titleLabel = new Label("VICTORY!");
+	    titleLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 52px; -fx-text-fill: #ffcc00; -fx-font-weight: bold;" + textGlowStyle);
+	    
+	    Label subTitleLabel = new Label(winnerName.toUpperCase() + " WINS THE COMPETITION!");
+	    subTitleLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 24px; -fx-text-fill: #ffffff; -fx-font-weight: bold;" + textGlowStyle);
 
-	    // 2. Build a standalone card box with a solid dark purple background and bright borders
-	    VBox winBox = new VBox(25);
-	    winBox.getStyleClass().add("victory-card");
-	    winBox.setStyle(
-	        "-fx-background-color: #1e1b4b; " + 
-	        "-fx-border-color: #00e5d4; " +      
-	        "-fx-border-width: 3px; " +
-	        "-fx-border-radius: 16px; " +
-	        "-fx-background-radius: 16px; " +
-	        "-fx-padding: 40px; " +
-	        "-fx-effect: dropshadow(three-pass-box, rgba(0, 229, 212, 0.4), 20, 0, 0, 0);"
+	    // 3. Side-by-Side Player Profiles Container
+	    HBox profilesLayout = new HBox(40);
+	    profilesLayout.setAlignment(Pos.CENTER);
+	    profilesLayout.setPadding(new Insets(20));
+
+	    // Gather engine monster objects
+	    game.engine.monsters.Monster winnerMonster = game.getWinner();
+	    if (winnerMonster == null) {
+	        winnerMonster = game.getCurrent(); // Fallback safety
+	    }
+	    
+	    // Find the opponent monster instance
+	    game.engine.monsters.Monster opponentMonster = game.getOpponent();
+
+	    // ── WINNER CARD COLUMN ──────────────────────────────────────────────────
+	    VBox winnerCard = new VBox(15);
+	    winnerCard.setAlignment(Pos.CENTER);
+	    winnerCard.setPadding(new Insets(25));
+	    winnerCard.setMinWidth(300);
+	    // Gold tint border for winner card frame
+	    winnerCard.setStyle("-fx-background-color: rgba(255, 255, 255, 0.08); -fx-background-radius: 15px; -fx-border-color: #ffcc00; -fx-border-width: 2px; -fx-border-radius: 15px;");
+
+	    Label winnerHeader = new Label("🏆 WINNER");
+	    winnerHeader.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 22px; -fx-text-fill: #ffcc00; -fx-font-weight: bold;");
+
+	    if (winnerMonster != null) {
+	        StackPane winnerAvatar = AvatarUtil.buildAvatar(winnerMonster, 110);
+	        winnerCard.getChildren().add(winnerAvatar);
+	    }
+
+	    Label winnerStatsLabel = new Label(
+	        "Name: " + (winnerMonster != null ? winnerMonster.getName() : winnerName) + "\n" +
+	        "Final Position: Cell " + position + "\n" +
+	        "Energy Canister: " + energy + " ⚡"
 	    );
-	    winBox.setAlignment(Pos.CENTER);
-	    winBox.setMaxWidth(500);
-	    winBox.setMaxHeight(380);
+	    winnerStatsLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 16px; -fx-text-fill: #ffffff; -fx-text-alignment: center; -fx-line-spacing: 5px; -fx-font-weight: bold;");
+	    winnerCard.getChildren().addAll(winnerHeader, winnerStatsLabel);
 
-	    // 3. Header title label using text colors that contrast nicely on screen
-	    Label titleLabel = new Label("🎉 VICTORY REACHED! 🎉");
-	    titleLabel.setStyle(
-	        "-fx-font-family: 'Bangers'; " +
-	        "-fx-font-size: 38px; " +
-	        "-fx-text-fill: #a8e63d;" 
-	    ); 
+	    // ── OPPONENT CARD COLUMN ────────────────────────────────────────────────
+	    VBox opponentCard = new VBox(15);
+	    opponentCard.setAlignment(Pos.CENTER);
+	    opponentCard.setPadding(new Insets(25));
+	    opponentCard.setMinWidth(300);
+	    // Silver/Gray tint border for opponent card frame
+	    opponentCard.setStyle("-fx-background-color: rgba(255, 255, 255, 0.05); -fx-background-radius: 15px; -fx-border-color: #a0a0a0; -fx-border-width: 1px; -fx-border-radius: 15px;");
 
-	    // 4. Main stats statement body
-	    Label detailsLabel = new Label(
-	        "Congratulations, " + winnerName + "!\n\n" +
-	        "🏆 Final Position: " + position + "\n" +
-	        "⚡ Energy Collected: " + energy + "\n\n" +
-	        "You safely completed the Door Dash loop!"
+	    Label opponentHeader = new Label("🥈 OPPONENT");
+	    opponentHeader.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 20px; -fx-text-fill: #e0e0e0; -fx-font-weight: bold;");
+
+	    if (opponentMonster != null) {
+	        StackPane opponentAvatar = AvatarUtil.buildAvatar(opponentMonster, 110);
+	        opponentCard.getChildren().add(opponentAvatar);
+	    }
+
+	    Label opponentStatsLabel = new Label(
+	        "Name: " + (opponentMonster != null ? opponentMonster.getName() : "Opponent") + "\n" +
+	        "Final Position: Cell " + (opponentMonster != null ? opponentMonster.getPosition() : "N/A") + "\n" +
+	        "Energy Canister: " + (opponentMonster != null ? opponentMonster.getEnergy() : "0") + " ⚡"
 	    );
-	    detailsLabel.setStyle(
-	        "-fx-font-family: 'Nunito'; " +
-	        "-fx-font-size: 16px; " +
-	        "-fx-text-fill: #ffffff; " + 
-	        "-fx-text-alignment: center; " +
-	        "-fx-line-spacing: 6px; " +
-	        "-fx-font-weight: bold;"
-	    );
+	    opponentStatsLabel.setStyle("-fx-font-family: 'Nunito'; -fx-font-size: 16px; -fx-text-fill: #cccccc; -fx-text-alignment: center; -fx-line-spacing: 5px; -fx-font-weight: bold;");
+	    opponentCard.getChildren().addAll(opponentHeader, opponentStatsLabel);
 
-	    // 5. Return to Start Window Button
+	    // Add both profiles to the horizontal layout container row
+	    profilesLayout.getChildren().addAll(winnerCard, opponentCard);
+
+	    // 4. Return to Main Menu Action Button
 	    Button closeButton = new Button("BACK TO MAIN MENU");
 	    closeButton.getStyleClass().add("mi-button"); 
+	    closeButton.setPrefWidth(220);
 	    closeButton.setOnAction(e -> {
 	        try {
+
 	            // 🆕 Open the Start Screen stage window first
 	            Main menu = new Main();
 	            menu.showMenu();
 	            
 	            // 🆕 Close the current running board stage game window loop
 	            this.stage.close();
+
+	            //Main menu = new Main();
+	            stage.close();
+	            //menu.start(stage);
+
 	        } catch (Exception ex) {
-	            System.err.println("Error returning to StartScreen: " + ex.getMessage());
 	            ex.printStackTrace();
-	            stage.close(); // Fallback safety close
+	            stage.close();
 	        }
 	    });
 
-	    // Assemble layout items sequentially
-	    winBox.getChildren().addAll(titleLabel, detailsLabel, closeButton);
-	    modalityBlocker.getChildren().add(winBox);
+	    // 5. Build full scene stack layout view
+	    victoryOverlayContainer.getChildren().addAll(titleLabel, subTitleLabel, profilesLayout, closeButton);
 
-	    // Inject the clean layout modal covering the central workspace
-	    rootPane.setCenter(modalityBlocker);
+	    // 6. Layer the updated container onto the active scene tree safely without swapping windows
+	    if (stage.getScene() != null && stage.getScene().getRoot() instanceof Pane) {
+	        Pane currentRoot = (Pane) stage.getScene().getRoot();
+
+	        if (!(currentRoot instanceof StackPane)) {
+	            StackPane wrapperStack = new StackPane();
+	            javafx.scene.Parent oldRoot = stage.getScene().getRoot();
+	            
+	            stage.getScene().setRoot(new Pane()); // Clean reference link detach
+	            wrapperStack.getChildren().addAll(oldRoot, victoryOverlayContainer);
+	            stage.getScene().setRoot(wrapperStack);
+	        } else {
+	            ((StackPane) currentRoot).getChildren().add(victoryOverlayContainer);
+	        }
+	    } else {
+	        Scene victoryScene = new Scene(victoryOverlayContainer, 1100, 750);
+	        stage.setScene(victoryScene);
+	    }
 	}
 
 
