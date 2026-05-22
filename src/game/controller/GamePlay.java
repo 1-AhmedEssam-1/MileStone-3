@@ -46,6 +46,13 @@ public class GamePlay {
                         handleCheatRefillEnergyAction();
                         event.consume();
                         break;
+                    case X:
+                        // ❌ Cleanly exits the entire JavaFX application platform and processes
+                        System.out.println("🚪 Exiting game via 'X' hotkey...");
+                        javafx.application.Platform.exit();
+                        System.exit(0); 
+                        event.consume();
+                        break;
                     default:
                         break;
                 }
