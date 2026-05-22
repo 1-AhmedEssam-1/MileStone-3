@@ -4,6 +4,7 @@ import game.controller.GamePlay;
 import game.engine.Constants;
 import game.engine.Game;
 import game.engine.Role;
+import game.engine.cards.Card;
 import game.engine.cells.Cell;
 import game.engine.cells.DoorCell;
 import game.engine.cells.MonsterCell;
@@ -39,6 +40,10 @@ public class BoardView {
 	private Label statsStatusLabel;
 	private Label statsPositionValueLabel;
 	private Label statsCellTypeLabel;
+	private ImageView statsCellImageView; // 🆕 Track the cell preview image container
+	private Label deckCountLabel; // 🆕 Track the live deck size text display
+	private ImageView lastDrawnCardFaceView;
+	private VBox lastDrawnContainer;
 
 
 	// ── Player UI Cards (Bottom Left) ────────────────────────────
@@ -112,11 +117,18 @@ public class BoardView {
 		board.refresh();
 
 		Monster currentTurnMonster = game.getCurrent();
+		
+		// ── 🆕 Synchronize the deck capacity layout label string ──
+				if (deckCountLabel != null && game.getBoard().getCards() != null) {
+					deckCountLabel.setText("CARDS LEFT: " + game.getBoard().getCards().size());
+				}
 
 		// Reset Right Stats summary panel back to tracking the active moving monster
 		updateStatsPanelForMonster(currentTurnMonster, null, game);
 
 		Cell currentCell = board.getCellFromBoard(currentTurnMonster.getPosition());
+		// 🆕 Synchronize side graphic back to the active position asset
+		updateStatsPanel(currentTurnMonster.getPosition(), currentCell, game);
 		statsCellTypeLabel.setText(resolveCellTypeName(currentTurnMonster.getPosition(), currentCell));
 		refreshBottomCards(game);
 
@@ -128,14 +140,14 @@ public class BoardView {
 	}
 
 	private BorderPane buildStatsPanel(Game game) {
-		//adels
-		// ── 1. Create the Main Wrapper Panel (Now a BorderPane) ──
+		// ── 1. Create the Main Wrapper Panel ──
         BorderPane panel = new BorderPane();
         panel.getStyleClass().add("stats-panel");
         panel.setPrefWidth(220);
-        panel.setMinWidth(200);
-        panel.setPadding(new Insets(24, 20, 24, 20));
-        //end adels
+        panel.setMinWidth(220);
+        panel.setMaxWidth(220);
+        panel.setPadding(new Insets(24, 15, 24, 15)); // Snug padding to protect horizontal spacing
+
 		Label header = new Label("Stats");
 		header.getStyleClass().add("stats-header");
 
@@ -155,7 +167,6 @@ public class BoardView {
 		HBox energyRow = new HBox(8, energyTitle, statsEnergyValueLabel);
 		energyRow.setAlignment(Pos.CENTER_LEFT);
 
-		// 🆕 Wrap Energy Row & Bar inside an independent layout VBox container to show/hide it cleanly
 		energySectionContainer = new VBox(8, energyRow, statsEnergyBar);
 
 		statsStatusLabel = new Label("● ACTIVE");
@@ -180,51 +191,121 @@ public class BoardView {
 		VBox cellCard = new VBox(4, cellTypeTitle, statsCellTypeLabel);
 		cellCard.getStyleClass().add("stats-card");
 		cellCard.setAlignment(Pos.CENTER);
-		/// adels part 
-		// Gather metrics together into a single layout container
-        VBox topContent = new VBox(16, header, energySectionContainer, statsStatusLabel, posCard, cellCard);
-        panel.setTop(topContent); // Lock it completely to the top boundaries
+		
+		// ── 2. Cell Image Preview Component ──
+		statsCellImageView = new ImageView();
+		statsCellImageView.setFitWidth(180); 
+		statsCellImageView.setPreserveRatio(true);
+		statsCellImageView.setSmooth(true);
+		statsCellImageView.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 4);");
 
-        // ── 3. Rotated Deck Section (Permanently anchored at the BOTTOM LEFT) ──
+        // ── 3. Fixed Deck & Last Played Stack Area ──
         ImageView deckImageView = new ImageView();
-     // ✅ Scale it up so it takes up substantial vertical space (acts as height when rotated)
-     deckImageView.setFitWidth(380);          
-     deckImageView.setFitHeight(220); // Scale the height proportionally        
-     deckImageView.setPreserveRatio(true);    
-     deckImageView.setSmooth(true);           
+        // Downscale slightly to ensure it stays perfectly balanced inside the 220px bounds when rotated
+        deckImageView.setFitWidth(300);          
+        deckImageView.setFitHeight(200);        
+        deckImageView.setPreserveRatio(true);    
+        deckImageView.setSmooth(true);           
+        deckImageView.setRotate(-90);
 
-     // Apply the 90-degree clockwise rotation
-     deckImageView.setRotate(-90);
+        try {
+            URL deckUrl = getClass().getResource("/assets/deck.png");
+            if (deckUrl != null) {
+                deckImageView.setImage(new Image(deckUrl.toExternalForm()));
+            }
+        } catch (Exception e) {
+            System.out.println("Could not load deck asset: " + e.getMessage());
+        }
 
-     try {
-         URL deckUrl = getClass().getResource("/assets/deck.png");
-         if (deckUrl != null) {
-             deckImageView.setImage(new Image(deckUrl.toExternalForm()));
-         }
-     } catch (Exception e) {
-         System.out.println("Could not load deck asset: " + e.getMessage());
-     }
+        // Overlapping Last Played Card Placement Slot
+        lastDrawnCardFaceView = new ImageView();
+        lastDrawnCardFaceView.setFitWidth(110); 
+        lastDrawnCardFaceView.setPreserveRatio(true);
+        lastDrawnCardFaceView.setSmooth(true);
+        lastDrawnCardFaceView.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.7), 10, 0, 0, 4);");
 
-     // ✅ THE SECRET INGREDIENT: Wrap it in a Group so JavaFX layout engine
-     // respects the 90-degree rotated bounds instead of the original horizontal bounds.
-     javafx.scene.Group rotatedGroup = new javafx.scene.Group(deckImageView);
+        Label previewBadge = new Label("LAST PLAYED");
+        previewBadge.setStyle("-fx-text-fill: #e9b949; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-color: rgba(11,26,48,0.85); -fx-padding: 2 6; -fx-background-radius: 4;");
 
-     // Wrap inside a StackPane to anchor the group cleanly in the center of the column
-     StackPane deckCenterer = new StackPane(rotatedGroup);
-     deckCenterer.setAlignment(Pos.CENTER);
+        lastDrawnContainer = new VBox(4, previewBadge, lastDrawnCardFaceView);
+        lastDrawnContainer.setAlignment(Pos.CENTER);
+        lastDrawnContainer.setVisible(false); 
+        lastDrawnContainer.setMouseTransparent(true); 
 
-     // Wrap the centerer in your bottom layout container 
-     VBox deckWrapper = new VBox(deckCenterer);
-     deckWrapper.setAlignment(Pos.BOTTOM_CENTER);
+        // Wrap rotated deck view inside a Group container 
+        javafx.scene.Group rotatedGroup = new javafx.scene.Group(deckImageView);
+        
+        // Fix vertical margins and alignment by centering tightly inside a constrained layout panel
+        StackPane deckCenterer = new StackPane(rotatedGroup, lastDrawnContainer);
+        deckCenterer.setAlignment(Pos.CENTER);
+        deckCenterer.setPrefHeight(210); // Hard caps the height to kill empty top/bottom margins completely
+        deckCenterer.setMinHeight(210);
+        deckCenterer.setMaxHeight(210);
 
-     // ✅ Add comfortable top padding to give it space from the cards above
-     deckWrapper.setPadding(new Insets(40, 0, 20, 0)); 
+        deckCountLabel = new Label("CARDS LEFT: " + game.getBoard().getCards().size());
+        deckCountLabel.getStyleClass().add("stats-card-title"); 
+        deckCountLabel.setStyle("-fx-text-fill: white;");
 
-     panel.setBottom(deckWrapper);
+        // Vertical packaging layout widget box specifically for the card pile elements
+        VBox deckWrapper = new VBox(5, deckCenterer, deckCountLabel);
+        deckWrapper.setAlignment(Pos.CENTER);
 
-        panel.setBottom(deckWrapper);
+        // ── 4. Unified VBox Container ──
+        VBox columnStack = new VBox(14);
+        columnStack.setAlignment(Pos.TOP_CENTER);
+        columnStack.getChildren().addAll(
+            header, 
+            statsCellImageView, 
+            energySectionContainer, 
+            statsStatusLabel, 
+            posCard, 
+            cellCard,
+            deckWrapper
+        );
+
+        // Wrap inside a ScrollPane container bound cleanly so layout boundaries remain stable
+        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(columnStack);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setVbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+
+        panel.setCenter(scrollPane);
         return panel;
     }
+	
+	// ── 🆕 Method to paint the face-up card overlay graphic above the pile ──
+		public void updateLastDrawnCardSlot(Card card) {
+			if (card == null) {
+				lastDrawnContainer.setVisible(false);
+				return;
+			}
+
+			String lookupName = "swap"; // Default fallback graphic identifier
+
+			// Class evaluation via instanceof matching your Milestone compilation architecture
+			if (card instanceof game.engine.cards.SwapperCard) {
+				lookupName = "swap";
+			} else if (card instanceof game.engine.cards.ShieldCard) {
+				lookupName = "shield";
+			} else if (card instanceof game.engine.cards.EnergyStealCard) {
+				lookupName = "energysteal";
+			} else if (card instanceof game.engine.cards.StartOverCard) {
+				lookupName = "startover";
+			} else if (card instanceof game.engine.cards.ConfusionCard) {
+				lookupName = "confusion";
+			}
+
+			try {
+				// Pulls safely from your /assets/ folder
+				String imagePath = "/assets/" + lookupName + ".png";
+				Image cardImage = new Image(getClass().getResourceAsStream(imagePath));
+				lastDrawnCardFaceView.setImage(cardImage);
+				lastDrawnContainer.setVisible(true); // Unhide layer to show the face-up artwork layout slot
+			} catch (Exception e) {
+				System.out.println("⚠️ Could not render face-up deck card artwork for asset filename: " + lookupName);
+			}
+		}
 	////end adels
 
 		//Label legendTitle = new Label("LEGEND");
@@ -382,7 +463,35 @@ public class BoardView {
 	// ── Cell Click Presentation Manager ─────────────────────────
 	private void updateStatsPanel(int cellNumber, Cell cell, Game game) {
 		Monster m = null;
+		
+		
+		// ── 🆕 Update Dynamic Cell Preview Graphic ──
+				String imgFile = null;
+				if (cellNumber == Constants.STARTING_POSITION)                 imgFile = "start.png";
+				else if (cellNumber == Constants.WINNING_POSITION)             imgFile = "end.png";
+				else if (contains(Constants.CONVEYOR_CELL_INDICES, cellNumber))imgFile = (cellNumber == 66) ? "conveyorleft.png" : "conveyor.png";
+				else if (contains(Constants.SOCK_CELL_INDICES,     cellNumber))imgFile = "sock.png";
+				else if (contains(Constants.CARD_CELL_INDICES,     cellNumber))imgFile = "card.png";
+				else if (cell instanceof DoorCell) {
+					DoorCell dc = (DoorCell) cell;
+					imgFile = dc.isActivated() ? "door_exhausted.png" : (dc.getRole() == Role.SCARER ? "scare_door.png" : "laugh_door.png");
+				}
 
+				if (imgFile != null) {
+					try {
+						URL imgUrl = getClass().getResource("/assets/" + imgFile);
+						if (imgUrl != null) {
+							statsCellImageView.setImage(new Image(imgUrl.toExternalForm()));
+							statsCellImageView.setVisible(true);
+							statsCellImageView.setManaged(true);
+						}
+					} catch (Exception e) {
+						System.out.println("Could not resolve cell image preview: " + e.getMessage());
+					}
+				} else {
+					// Clear image if clicking a normal cell grid space that doesn't hold unique asset files
+					statsCellImageView.setImage(null);
+				}
 		// Check if an active moving character is standing on the clicked cell
 		if (cell != null && cell.isOccupied()) {
 			m = cell.getMonster();

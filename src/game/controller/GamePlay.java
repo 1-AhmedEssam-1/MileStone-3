@@ -98,6 +98,10 @@ public class GamePlay {
                     if (drawnCard != null) {
                         // Show the alert box window to the user using the already-processed card
                         game.view.CardPopup.show(primaryStage, drawnCard, () -> {
+                            
+                            // ── 🆕 STEP 4: Send the drawn card to the background preview frame over the pile ──
+                            boardView.updateLastDrawnCardSlot(drawnCard);
+                            
                             boardView.refreshAllViewComponents();
                             checkForWinCondition();
                             
