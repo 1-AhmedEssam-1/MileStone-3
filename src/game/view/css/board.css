@@ -470,9 +470,17 @@
 
 
 
+/* Style for the track (the background image of the canister) */
+/* Keep the background track transparent since Java handles the image */
+.scream-canister-bar .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
 
-
-
+/* Style the dynamic moving progress liquid indicator */
+.scream-canister-bar .bar {
+    -fx-background-radius: 12px;
+}
 
 
 

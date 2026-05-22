@@ -64,6 +64,8 @@ public class StartScreen extends Stage {
         this.setOnCloseRequest(e -> System.exit(0));
         this.setTitle("DooR DasH: Scare vs Laugh Touchdown");
         this.setScene(scene);
+        //added by 3ssam
+        this.setFullScreen(true);
         this.show();
     }
 

@@ -10,28 +10,51 @@ import javafx.stage.Stage;
 public class Main extends Application {
 	GameBackground background;
     private Stage stage;
-    private GamePlay gameplay;
+    private static GamePlay gameplay;
 	@Override
     public void start(Stage primalyStage) {//----- 
         background= new GameBackground();
         // Open start screen properly
         StartScreen startScreen = new StartScreen();
+        startScreen.setFullScreen(true);
 
         primalyStage=startScreen;
         stage=primalyStage;
         gameplay= new GamePlay(stage);
 
-        background.pauseMusic();
+        //background.pauseMusic();
 
         // ✅ FIXED: now works
         startScreen.getScarerBtn().setOnAction(e -> startGame(Role.SCARER));
         startScreen.getLaugherBtn().setOnAction(e -> startGame(Role.LAUGHER));
         
     }
+	
+	public static void showMenu() {
+        // Create the temporary menu window
+		GameBackground.switchTrack("/assets/StartMenuTrack.mp3");
+        StartScreen startScreen = new StartScreen();
+        startScreen.setFullScreen(true);
+
+        // Bind the buttons directly to trigger gameplay on our permanent primary stage
+        startScreen.getScarerBtn().setOnAction(e -> {
+            startScreen.close(); // Close the menu window safely
+            startGame(Role.SCARER);
+        });
+
+        startScreen.getLaugherBtn().setOnAction(e -> {
+            startScreen.close(); // Close the menu window safely
+            startGame(Role.LAUGHER);
+        });
+    }
+	
+	
  // ✅ FIXED GAME START METHOD
-    private void startGame(Role role) {
+    private static void startGame(Role role) {
         try {
+        	GameBackground.switchTrack("/assets/Monsters Inc theme full.mp3");
             Game game = new Game(role);
+            
 
             gameplay.handleStartGame(role);
             
