@@ -224,14 +224,14 @@ public class MonsterGUI extends StackPane{
         }
         energyEffect.setVisible(true);
 
-        TranslateTransition floatUp = new TranslateTransition(Duration.millis(1400), energyEffect);
+        TranslateTransition floatUp = new TranslateTransition(Duration.millis(2400), energyEffect);
         floatUp.setFromY(startYenergyEffect);
         floatUp.setToY(endYenergyEffect);
 
-        FadeTransition fadeOut = new FadeTransition(Duration.millis(900), energyEffect);
+        FadeTransition fadeOut = new FadeTransition(Duration.millis(3600), energyEffect);
         fadeOut.setFromValue(1.0);
         fadeOut.setToValue(0.0);
-        fadeOut.setDelay(Duration.millis(800)); // hold visible before fading
+        fadeOut.setDelay(Duration.millis(1200)); // hold visible before fading
 
         ParallelTransition composition = new ParallelTransition(floatUp, fadeOut);
         composition.setOnFinished(event -> {
@@ -273,7 +273,7 @@ public class MonsterGUI extends StackPane{
                 DropShadow glowing=glow(2.8);
                 powered=true;
                 Bloom bloom = new Bloom();  
-                bloom.setThreshold(0.008);
+                bloom.setThreshold(0.08);
                 bloom.setInput(glowing);
                 monImage.setEffect(bloom);  
                 monImage.getStyleClass().add("powerup");

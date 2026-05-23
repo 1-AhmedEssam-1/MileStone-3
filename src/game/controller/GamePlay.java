@@ -208,35 +208,16 @@ public class GamePlay {
 //        }
 //    }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+  
     public void handleUsePowerupAction() {
         if (gameEngine == null || boardView == null) return;
 
         try {
-          
             gameEngine.usePowerup();
             System.out.println("Power-up is activated successfully by " + gameEngine.getCurrent().getName());
+            if(gameEngine.getCurrent()==gameEngine.getPlayer()) 
+            	boardView.getBoard().getPlayerToken().getPlayer().powerUPeffect();
+            else boardView.getBoard().getPlayerToken().getPlayer().powerUPeffect();
             boardView.refreshAllViewComponents();
 
         } catch (game.engine.exceptions.OutOfEnergyException ex) {

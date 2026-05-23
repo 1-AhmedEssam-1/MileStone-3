@@ -36,7 +36,7 @@ public class PlayerMonster extends StackPane {
     private final MonsterGUI[] playerList;
     private MonsterGUI player;
     private final double cellSize;
-    private static final double STEP_MS = 160;
+    private static final double STEP_MS = 650;
 
     /** Badge label — persists across sprite swaps. */
     private Label badgeLabel;
@@ -46,8 +46,8 @@ public class PlayerMonster extends StackPane {
         this.setAlignment(Pos.CENTER);
 
         // Preload both standard profile states (s_ = Standard, o_ = Action/Door Roar State)
-        MonsterGUI sPlayer = new MonsterGUI("s_" + playerCharacter, cellSize - 4, typeColor);
-        MonsterGUI oPlayer = new MonsterGUI("o_" + playerCharacter, cellSize - 4, typeColor);
+        MonsterGUI sPlayer = new MonsterGUI("s_" + playerCharacter, cellSize + 3, typeColor);
+        MonsterGUI oPlayer = new MonsterGUI("o_" + playerCharacter, cellSize + 3, typeColor);
 
         this.playerList = new MonsterGUI[]{sPlayer, oPlayer};
         this.player = playerList[0];
@@ -113,7 +113,7 @@ public class PlayerMonster extends StackPane {
         this.player = doorSprite;
         getChildren().add(0, this.player);
 
-        PauseTransition timer = new PauseTransition(Duration.millis(1200));
+        PauseTransition timer = new PauseTransition(Duration.millis(3200));
         timer.setOnFinished(e -> standUp());
         timer.play();
     }
@@ -289,6 +289,15 @@ public class PlayerMonster extends StackPane {
         // If the token has zero bounds (first frame), fall back to cellSize estimate
         if (tokenW == 0) tokenW = destPane.getPrefWidth()  * 0.75;
         if (tokenH == 0) tokenH = destPane.getPrefHeight() * 0.75;
+
+        // Safety: if overlay has zero bounds (layout not done yet), fall back
+        if (overlay.getWidth() <= 0 || overlay.getHeight() <= 0) {
+            // Use dest bounds directly relative to overlay's (0,0)
+            return new double[]{
+                dest.getWidth()  / 2 - tokenW / 2,
+                dest.getHeight() / 2 - tokenH / 2
+            };
+        }
 
         double x = dest.getMinX() - overlay.getMinX()
                  + dest.getWidth()  / 2 - tokenW / 2;

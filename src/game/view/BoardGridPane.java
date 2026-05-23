@@ -67,7 +67,7 @@ public class BoardGridPane extends GridPane {
      * without being clipped by individual cell panes.
      * BoardView must stack this on top of this GridPane inside a StackPane.
      */
-    private final StackPane overlayPane = new StackPane();
+    private final StackPane overlayPane;
 
     private PlayerMonster playerToken;
     private PlayerMonster opponentToken;
@@ -75,6 +75,13 @@ public class BoardGridPane extends GridPane {
     // ── Constructor ────────────────────────────────────────────────────────
     public BoardGridPane(Game game) {
         this.game = game;
+
+        // Create overlay pane — must fill same area as grid for coordinate math
+        overlayPane = new StackPane();
+        overlayPane.setStyle("-fx-background-color: transparent;");
+        overlayPane.setPickOnBounds(false);
+        overlayPane.setMouseTransparent(true);
+
         setHgap(4);
         setVgap(4);
         setAlignment(Pos.CENTER);
@@ -105,6 +112,10 @@ public class BoardGridPane extends GridPane {
     /**
      * Animate mover's token walking from fromCell to toCell.
      *
+     * The token is removed from its current cell pane, placed in the overlay
+     * for smooth animation, then moved into the destination cell pane on
+     * completion so it is always visible.
+     *
      * If landingCell differs from toCell (transport cell displaced the
      * monster), the animation is split:
      *   Phase 1: walk cell-by-cell from fromCell to landingCell
@@ -130,6 +141,21 @@ public class BoardGridPane extends GridPane {
             if (onFinished != null) onFinished.run();
             return;
         }
+
+        // ── Remove token from current cell pane, place in overlay for animation ──
+        removeTokenFromCell(token, fromCell);
+        // Safety: don't re-add if token is already in the overlay
+        if (token.getParent() != overlayPane) {
+            overlayPane.getChildren().add(token);
+        }
+
+        // Force layout so centreOf() coordinate calculations work
+        layout();
+        overlayPane.layout();
+
+        // Snap token to starting cell position in overlay
+        StackPane fromPane = (fromCell >= 0 && fromCell < cellPanes.length) ? cellPanes[fromCell] : null;
+        if (fromPane != null) token.snapToCell(fromPane, overlayPane);
 
         // Determine destination tag (door / normal)
         Cell destCell = getCellFromBoard(toCell);
@@ -162,6 +188,10 @@ public class BoardGridPane extends GridPane {
                         int energyAfter = mover.getEnergy();
                         token.showEnergyDelta(energyBefore, energyAfter);
 
+                        // ── Move token from overlay into destination cell pane ──
+                        overlayPane.getChildren().remove(token);
+                        placeTokenInCell(token, toCell);
+
                         if (onFinished != null) onFinished.run();
                     });
                 } else {
@@ -169,6 +199,11 @@ public class BoardGridPane extends GridPane {
                     if ("door".equals(destTag)) token.openTheDoor();
                     int energyAfter = mover.getEnergy();
                     token.showEnergyDelta(energyBefore, energyAfter);
+
+                    // ── Move token from overlay into destination cell pane ──
+                    overlayPane.getChildren().remove(token);
+                    placeTokenInCell(token, toCell);
+
                     if (onFinished != null) onFinished.run();
                 }
             });
@@ -181,6 +216,10 @@ public class BoardGridPane extends GridPane {
                 int energyAfter = mover.getEnergy();
                 token.showEnergyDelta(energyBefore, energyAfter);
 
+                // ── Move token from overlay into destination cell pane ──
+                overlayPane.getChildren().remove(token);
+                placeTokenInCell(token, toCell);
+
                 if (onFinished != null) onFinished.run();
             });
         }
@@ -190,6 +229,81 @@ public class BoardGridPane extends GridPane {
     public void refreshTokenStatuses() {
         applyStatusToToken(playerToken,   game.getPlayer());
         applyStatusToToken(opponentToken, game.getOpponent());
+    }
+
+    // ── Cell-based token placement ────────────────────────────────────────
+
+    /**
+     * Place a player token directly into the destination cell's StackPane.
+     * If the cell is a MonsterCell, the stationed NPC monster is moved to the
+     * RIGHT of the BorderPane and the player token is placed on the LEFT.
+     * For all other cells the token is simply added as a child of the StackPane.
+     */
+    public void placeTokenInCell(PlayerMonster token, int cellIndex) {
+        if (cellIndex < 0 || cellIndex >= cellPanes.length) return;
+        StackPane cellPane = cellPanes[cellIndex];
+        Cell cell = getCellFromBoard(cellIndex);
+
+        // Reset translation — cell layout handles positioning
+        token.setTranslateX(0);
+        token.setTranslateY(0);
+        token.getPlayer().setInCell();
+
+        if (cell instanceof MonsterCell) {
+            BorderPane bp = findBorderPane(cellPane);
+            if (bp != null) {
+                // Move stationed monster from center to right
+                Node center = bp.getCenter();
+                if (center != null) {
+                    bp.setCenter(null);
+                    bp.setRight(center);
+                }
+                // Add player token to left of the BorderPane
+                bp.setLeft(token);
+            } else {
+                // Fallback: no BorderPane found, just add to cell
+                cellPane.getChildren().add(token);
+            }
+        } else {
+            cellPane.getChildren().add(token);
+        }
+    }
+
+    /**
+     * Remove a player token from its current cell's StackPane.
+     * If the cell is a MonsterCell, the stationed NPC monster is restored
+     * to the CENTER of the BorderPane.
+     */
+    public void removeTokenFromCell(PlayerMonster token, int cellIndex) {
+        if (cellIndex < 0 || cellIndex >= cellPanes.length) return;
+        StackPane cellPane = cellPanes[cellIndex];
+        Cell cell = getCellFromBoard(cellIndex);
+
+        if (cell instanceof MonsterCell) {
+            BorderPane bp = findBorderPane(cellPane);
+            if (bp != null) {
+                // Remove player from left of the BorderPane
+                bp.setLeft(null);
+                // Restore stationed monster to center
+                Node right = bp.getRight();
+                if (right != null) {
+                    bp.setRight(null);
+                    bp.setCenter(right);
+                }
+            }
+        } else {
+            cellPane.getChildren().remove(token);
+        }
+    }
+
+    /**
+     * Find the first BorderPane child of a cell StackPane (used for MonsterCell layout).
+     */
+    private BorderPane findBorderPane(StackPane parent) {
+        for (Node n : parent.getChildren()) {
+            if (n instanceof BorderPane) return (BorderPane) n;
+        }
+        return null;
     }
 
     // ── Coordinate helpers ─────────────────────────────────────────────────
@@ -253,19 +367,12 @@ public class BoardGridPane extends GridPane {
         applyStatusToToken(playerToken,   player);
         applyStatusToToken(opponentToken, opponent);
 
-        overlayPane.getChildren().setAll(playerToken, opponentToken);
-        overlayPane.setPickOnBounds(false);
-        overlayPane.setMouseTransparent(true);
+        // Clear overlay (tokens no longer live there permanently)
+        overlayPane.getChildren().clear();
 
-        // Snap to current positions after layout
-        Platform.runLater(() -> {
-            int pPos = player.getPosition();
-            int oPos = opponent.getPosition();
-            StackPane pp = (pPos >= 0 && pPos < cellPanes.length) ? cellPanes[pPos] : null;
-            StackPane op = (oPos >= 0 && oPos < cellPanes.length) ? cellPanes[oPos] : null;
-            if (pp != null) playerToken.snapToCell(pp,   overlayPane);
-            if (op != null) opponentToken.snapToCell(op, overlayPane);
-        });
+        // Add tokens directly to their cell panes — no coordinate math needed
+        placeTokenInCell(playerToken,   player.getPosition());
+        placeTokenInCell(opponentToken, opponent.getPosition());
     }
 
     private PlayerMonster createToken(Monster m, String badge, String badgeColor) {
@@ -309,7 +416,7 @@ public class BoardGridPane extends GridPane {
 
         boolean forward = toCell > fromCell;
         int current = fromCell;
-        int maxSteps = size; // safety cap
+        int maxSteps = 24; // safety cap
         while (current != toCell && maxSteps-- > 0) {
             current = forward ? current + 1 : current - 1;
             if (current < 0 || current >= size) break; // boundary guard
