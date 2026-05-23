@@ -1,0 +1,30 @@
+/* Base Style for Monster Cards/Tokens */
+.monster-token {
+    -fx-background-radius: 15;
+}
+
+/* Active Scarer Glow */
+.powerup{
+    -fx-highlight-fill: ladder(-fx-background, black 90%, silver 50%);
+}
+.scarer-active {
+    -fx-effect: dropshadow(three-pass-box, #fff7f8, 15, 0.6, 0, 0);
+    -fx-rotate: -45;
+}
+
+/* Active Laugher Glow */
+.laugher-active {
+    -fx-effect: dropshadow(three-pass-box, #F0FFFF, 15, 0.6, 0, 0);
+    -fx-text-fill: yellowgreen ;
+    -fx-background-color: yellow;
+    -fx-background-radius: 18;
+    -fx-rotate: -45;
+}
+.freezed{
+	-fx-background-color: rgba(178, 222, 235, 0.89);
+					-fx-alignment: center ;
+				    -fx-border-color: #CFF1FA;
+				    -fx-border-width: 2;
+				    -fx-border-radius: 17;
+				    -fx-background-radius: 17;
+}
