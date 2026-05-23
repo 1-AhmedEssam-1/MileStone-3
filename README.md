@@ -13,13 +13,13 @@ This repository serves as a professional, production-grade implementation of the
 ### 1. Game Initialization & Strategic Configuration
 Upon application launch, the entry view serves as the operational gateway to the session, establishing the thematic aesthetic, handling character registration parameters, and providing players with access to distinct corporate alignments before initializing the primary layout.
 
-![Main Menu](images/mainmenu.jpg)
+![Main Menu](images/mainmenu.png)
 *Figure 1: Immersive landing window presenting character class parameters and role selection pathways for Scarers and Laughers.*
 
 ### 2. The Serpentine Grid Floor Arena
 The central game environment constructs an automated 100-tile serpentine grid arrangement. It dynamically tracks concurrent player tokens, calculates coordinate path shifts, and manages interactive tile assets.
 
-![Board View](images/board%20view.jpg)
+![Board View](images/board%20view.png)
 *Figure 2: Primary gameplay canvas highlighting the 10-column zig-zag layout mapping, character tokens, and environmental hazards.*
 
 ### 3. Unified Real-Time Performance Sidebar
@@ -37,7 +37,7 @@ Landing on specific tiles pulls tactical action cards from the deck layer. The g
 ### 5. Championship Victory Splash Dashboard
 When a monster crosses into Cell 99 while fulfilling the minimum 1,000-energy prerequisite, input handlers freeze and a victory dashboard takes focus, offering terminal scores and a clear callback route back to the main menu.
 
-![Winning Screen](images/winning.jpg)
+![Winning Screen](images/winning.png)
 *Figure 5: High-impact post-game overlay announcing the winner, detailing final canister counts, and resetting the game loop.*
 
 ---
