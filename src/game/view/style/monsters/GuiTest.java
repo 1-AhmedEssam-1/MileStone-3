@@ -25,12 +25,12 @@ public class GuiTest extends Application{
         	MonsterGUI mon1 =new MonsterGUI("s_"+list[i],CELL_SIZE-4,"#4CA2F7");
         	
         	mon1.laugherGUI();
-        	mon1.powerUPeffect();
-        	mon1.confuse();
-        	
+        	//mon1.powerUPeffect();
+        	//mon1.confuse();
+        	//mon1.coldFreeze(shielded);		//in player	
+        		
+        	mon1.shield(shielded);
         	mon1.setInCell();
-        	//mon1.coldFreeze(shielded);	//in player	
-        	//mon1.shield(shielded);
     		mon1.affect(-450);
     		//mon1.affect(320);
     		cellPane.getChildren().add(mon1);
@@ -45,7 +45,7 @@ public class GuiTest extends Application{
 		
 //		MonsterGUI mon2 =new MonsterGUI("s_Mike Wazowski",CELL_SIZE-20,"#97DE4A");
 //		mon2.laugherGUI();
-		//cellPane.setLeft(mon1);
+//		cellPane.setLeft(mon1);
 		
 		root.getChildren().add(items);
 

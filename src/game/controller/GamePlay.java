@@ -89,54 +89,65 @@ public class GamePlay {
         isTurnInProgress = true;
 
         try {
-            // 1. Run backend movement completely (Updates positions, triggers lands, draws card if applicable)
-            gameEngine.playTurn(); 
+            // ── 1. Snapshot BEFORE the engine runs ────────────────────────────
+            game.engine.monsters.Monster mover = gameEngine.getCurrent();   // who is moving
+            int     fromPos      = mover.getPosition();       // where they start
+            int     energyBefore = mover.getEnergy();         // energy before any effects
 
-            // 2. Extract results calculated inside your model engine
+            // ── 2. Engine resolves everything (move, cells, cards, turn switch) ─
+            gameEngine.playTurn();
+
+            // ── 3. Read outcomes ───────────────────────────────────────────────
             int trueRollResult = gameEngine.getLastDiceRoll();
+            int toPos          = mover.getPosition();        // engine-resolved destination
+            int landingCell    = game.engine.Board.getLastLandingCell(); // cell after dice, before transport
+
             DiceView diceView = boardView.getDiceView();
 
-            // 3. Play visual dice roll sequence matching true engine results
+            // ── 4. Spin the dice face, then walk the token ────────────────────
             diceView.playRollAnimation(trueRollResult, () -> {
-                try {
-                    // 4. Safely check if a Card was drawn by the board engine during playTurn()
-                    game.engine.cards.Card drawnCard = game.engine.Board.getLastDrawnCard();
 
-                    if (drawnCard != null) {
-                        // Show the alert box window to the user using the already-processed card
-                        game.view.CardPopup.show(primaryStage, drawnCard, () -> {
-                            
-                            // ── 🆕 STEP 4: Send the drawn card to the background preview frame over the pile ──
-                            boardView.updateLastDrawnCardSlot(drawnCard);
-                            
-                            boardView.refreshAllViewComponents();
-                            checkForWinCondition();
-                            
-                            if (gameEngine.getWinner() == null) {
-                                isTurnInProgress = false;
+                // animateTokenMove walks the token cell-by-cell and shows the
+                // floating energy-delta label, then calls our callback.
+                // When landingCell != toPos, a straight-line transport animation
+                // is played for the second leg (conveyor / sock).
+                boardView.getBoard().animateTokenMove(
+                    mover, fromPos, toPos, landingCell, energyBefore,
+                    () -> {
+                        try {
+                            // ── 5. Card popup (if a card was drawn this turn) ──
+                            game.engine.cards.Card drawnCard =
+                                    game.engine.Board.getLastDrawnCard();
+
+                            if (drawnCard != null) {
+                                boardView.updateLastDrawnCardSlot(drawnCard);
+                                game.view.CardPopup.show(primaryStage, drawnCard, () -> {
+                                    boardView.refreshAllViewComponents();
+                                    checkForWinCondition();
+                                    if (gameEngine.getWinner() == null)
+                                        isTurnInProgress = false;
+                                });
+                            } else {
+                                // ── 6. Normal move — refresh & check win ──────
+                                boardView.refreshAllViewComponents();
+                                checkForWinCondition();
+                                if (gameEngine.getWinner() == null)
+                                    isTurnInProgress = false;
                             }
-                        });
-                    } else {
-                        // Standard tile path: Redraw graphics clean
-                        boardView.refreshAllViewComponents();
-                        checkForWinCondition();
-                        
-                        if (gameEngine.getWinner() == null) {
+
+                        } catch (Exception ex) {
+                            System.err.println("UI sync error: " + ex.getMessage());
+                            boardView.refreshAllViewComponents();
                             isTurnInProgress = false;
                         }
                     }
-
-                } catch (Exception ex) {
-                    System.err.println("UI Sync adjustment error: " + ex.getMessage());
-                    boardView.refreshAllViewComponents();
-                    isTurnInProgress = false;
-                }
+                );
             });
 
         } catch (Exception ex) {
+            // playTurn() threw (InvalidMoveException, etc.) — unlock immediately
             System.err.println("Move skipped or rule exception: " + ex.getMessage());
             boardView.showSpamWarningPopup("Invalid Move: " + ex.getMessage());
-
             boardView.refreshAllViewComponents();
             isTurnInProgress = false;
         }
@@ -186,7 +197,7 @@ public class GamePlay {
 //                    isTurnInProgress = false;
 //                }
 //                
-//            });	
+//            });       
 //
 //        } catch (Exception ex) {
 //            System.out.println("Move skipped or rule exception: " + ex.getMessage());
@@ -197,35 +208,16 @@ public class GamePlay {
 //        }
 //    }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+  
     public void handleUsePowerupAction() {
         if (gameEngine == null || boardView == null) return;
 
         try {
-          
             gameEngine.usePowerup();
             System.out.println("Power-up is activated successfully by " + gameEngine.getCurrent().getName());
+            if(gameEngine.getCurrent()==gameEngine.getPlayer()) 
+            	boardView.getBoard().getPlayerToken().getPlayer().powerUPeffect();
+            else boardView.getBoard().getPlayerToken().getPlayer().powerUPeffect();
             boardView.refreshAllViewComponents();
 
         } catch (game.engine.exceptions.OutOfEnergyException ex) {
@@ -289,14 +281,14 @@ public class GamePlay {
     }
 
 
-//	@Override
-//	public void start(Stage primaryStage) throws Exception {
-//		StartScreen screen = new StartScreen();
-//		
-//		
-//		primaryStage = screen ;
-//		primaryStage.show();
-//		
-//		
-//	}
+//      @Override
+//      public void start(Stage primaryStage) throws Exception {
+//              StartScreen screen = new StartScreen();
+//              
+//              
+//              primaryStage = screen ;
+//              primaryStage.show();
+//              
+//              
+//      }
 }

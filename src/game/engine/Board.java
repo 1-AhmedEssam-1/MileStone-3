@@ -12,8 +12,9 @@ public class Board {
 	private Cell[][] boardCells;
 	private static ArrayList<Monster> stationedMonsters; 
 	private static ArrayList<Card> originalCards;
-	public static ArrayList<Card> cards;
+	public  static ArrayList<Card> cards;
 	private static Card lastDrawnCard = null; // Tracks the card drawn this turn
+	private static int lastLandingCell = -1;
 	
 	public Board(ArrayList<Card> readCards) {
 		this.boardCells = new Cell[Constants.BOARD_ROWS][Constants.BOARD_COLS];
@@ -59,9 +60,12 @@ public class Board {
 
 	    return new int[]{row, col};
 	}
-
 	
-	private Cell getCell(int index) {
+     public static int getLastLandingCell() {
+         return lastLandingCell;
+     }
+	
+	public Cell getCell(int index) {
 		int[] pos = indexToRowCol(index);
 		return boardCells[pos[0]][pos[1]];
 	}
@@ -132,11 +136,12 @@ public class Board {
 
 	public void moveMonster(Monster currentMonster, int roll, Monster opponentMonster) throws InvalidMoveException {
 		lastDrawnCard = null; // Clear old card reference at start of movement
+		lastLandingCell = -1;
 		Role oldRole = currentMonster.getRole();
 	    int oldPosition = currentMonster.getPosition();
 	    
 	    currentMonster.move(roll);
-
+	    lastLandingCell = currentMonster.getPosition();
 	    getCell(currentMonster.getPosition()).onLand(currentMonster, opponentMonster);
 
 	    if (currentMonster.getPosition() == opponentMonster.getPosition()) {

@@ -22,7 +22,6 @@
 }
 .freezed{
 	-fx-background-color: rgba(178, 222, 235, 0.89);
-					-fx-padding:-5;
 					-fx-alignment: center ;
 				    -fx-border-color: #CFF1FA;
 				    -fx-border-width: 2;
