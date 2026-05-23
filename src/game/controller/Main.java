@@ -21,7 +21,7 @@ public class Main extends Application {
         stage=primalyStage;
         gameplay= new GamePlay(stage);
 
-        background.pauseMusic();
+       // background.pauseMusic();
 
         // ✅ FIXED: now works
         startScreen.getScarerBtn().setOnAction(e -> startGame(Role.SCARER));

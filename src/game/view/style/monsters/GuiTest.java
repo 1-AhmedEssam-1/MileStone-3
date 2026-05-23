@@ -28,7 +28,6 @@ public class GuiTest extends Application{
         	//mon1.powerUPeffect();
         	//mon1.confuse();
         	//mon1.coldFreeze(shielded);		//in player	
-        	
         		
         	mon1.shield(shielded);
         	mon1.setInCell();

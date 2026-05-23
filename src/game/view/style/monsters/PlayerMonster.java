@@ -36,7 +36,7 @@ public class PlayerMonster extends StackPane {
     private final MonsterGUI[] playerList;
     private MonsterGUI player;
     private final double cellSize;
-    private static final double STEP_MS = 650;
+    private static final double STEP_MS = 487.5;
 
     /** Badge label — persists across sprite swaps. */
     private Label badgeLabel;

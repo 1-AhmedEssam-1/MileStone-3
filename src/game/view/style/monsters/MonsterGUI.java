@@ -68,8 +68,8 @@ public class MonsterGUI extends StackPane{
                 ice.setArcHeight(17);
                 ice.setArcWidth(28);
                 if(opacity==0){
-                        Image img = new Image(getClass().getResourceAsStream("/assets/shield.png")); 
-                        ImagePattern imginput = new ImagePattern(img);
+                    Image img = new Image(getClass().getResourceAsStream("/assets/shield.png")); 
+                    ImagePattern imginput = new ImagePattern(img);
                     ice.setFill(imginput);
                     ice.setTranslateX(size/6);
                     ice.setTranslateY(size/6+5);
@@ -175,11 +175,12 @@ public class MonsterGUI extends StackPane{
         public void monSet(){
                 // Remove any confused composite pane (but not freezeLap)
                 getChildren().removeIf(n -> n instanceof StackPane && n != freezeLap);
-
+                
                 glow(2);
                 freezeLap.getChildren().clear();
                 if(shield) this.shield(shield);
                 this.setStyle(null);
+                this.getStyleClass().add("monster-token");
                 if(powered)powerUPeffect();
                 monSizeAdjust(monImage,1);
 

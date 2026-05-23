@@ -24,6 +24,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Polygon;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -72,6 +76,11 @@ public class BoardGridPane extends GridPane {
     private PlayerMonster playerToken;
     private PlayerMonster opponentToken;
 
+    /** Pane that holds all transport-line visuals (green/red) on the overlay.
+     *  Uses Pane (not Group) so it doesn't auto-size to its children, and
+     *  setManaged(false) so the parent StackPane won't centre-shift it. */
+    private final Pane transportLinesGroup = new Pane();
+
     // ── Constructor ────────────────────────────────────────────────────────
     public BoardGridPane(Game game) {
         this.game = game;
@@ -81,6 +90,11 @@ public class BoardGridPane extends GridPane {
         overlayPane.setStyle("-fx-background-color: transparent;");
         overlayPane.setPickOnBounds(false);
         overlayPane.setMouseTransparent(true);
+
+        // Transport-lines pane — unmanaged so StackPane won't reposition it
+        transportLinesGroup.setManaged(false);
+        transportLinesGroup.setMouseTransparent(true);
+        overlayPane.getChildren().add(transportLinesGroup);
 
         setHgap(4);
         setVgap(4);
@@ -306,6 +320,121 @@ public class BoardGridPane extends GridPane {
         return null;
     }
 
+    // ── Transport lines (green = conveyor, red = sock) ───────────────────
+
+    /**
+     * Draws solid lines from each transport cell centre to its destination
+     * cell centre:
+     *   - Green lines for ConveyorBelt cells (cell + positive effect)
+     *   - Red   lines for ContaminationSock cells (cell + negative effect)
+     *
+     * Each line is a thick solid arrow with a triangular arrowhead at the
+     * destination end.  Lines are drawn on the overlay pane so they span
+     * across cells without clipping.
+     * Must be called after layout is complete (e.g. inside Platform.runLater).
+     */
+    public void drawTransportLines() {
+        transportLinesGroup.getChildren().clear();
+
+        // ── Conveyor lines (green) ──
+        for (int srcIdx : Constants.CONVEYOR_CELL_INDICES) {
+            Cell cell = getCellFromBoard(srcIdx);
+            if (cell instanceof ConveyorBelt) {
+                int effect = ((ConveyorBelt) cell).getEffect();
+                int destIdx = Math.max(0, Math.min(ROWS * COLS - 1, srcIdx + effect));
+                drawTransportLine(srcIdx, destIdx, Color.web("#22c55e"), 3.0);
+            }
+        }
+
+        // ── Sock lines (red) ──
+        for (int srcIdx : Constants.SOCK_CELL_INDICES) {
+            Cell cell = getCellFromBoard(srcIdx);
+            if (cell instanceof ContaminationSock) {
+                int effect = ((ContaminationSock) cell).getEffect();
+                int destIdx = Math.max(0, Math.min(ROWS * COLS - 1, srcIdx + effect));
+                drawTransportLine(srcIdx, destIdx, Color.web("#ff4444"), 3.0);
+            }
+        }
+    }
+
+    /**
+     * Draws a solid line from the centre of srcIdx cell to the centre of
+     * destIdx cell, with a triangular arrowhead at the destination end.
+     */
+    private void drawTransportLine(int srcIdx, int destIdx,
+                                   Color color, double strokeWidth) {
+        double[] src = cellCenterInOverlay(srcIdx);
+        double[] dst = cellCenterInOverlay(destIdx);
+        if (src == null || dst == null) return;
+
+        // ── Solid line from source centre to destination centre ──
+        Line line = new Line(src[0], src[1], dst[0], dst[1]);
+        line.setStroke(color);
+        line.setStrokeWidth(strokeWidth);
+        line.setMouseTransparent(true);
+
+        // ── Arrowhead triangle at the destination ──
+        Polygon arrowhead =
+                buildArrowhead(src[0], src[1], dst[0], dst[1], color);
+        if (arrowhead != null) {
+            arrowhead.setMouseTransparent(true);
+            transportLinesGroup.getChildren().addAll(line, arrowhead);
+        } else {
+            transportLinesGroup.getChildren().add(line);
+        }
+    }
+
+    /**
+     * Builds a triangular arrowhead at (dstX, dstY) pointing from
+     * (srcX, srcY) towards (dstX, dstY).
+     */
+    private Polygon buildArrowhead(double srcX, double srcY,
+                                    double dstX, double dstY,
+                                    Color fill) {
+        double dx = dstX - srcX;
+        double dy = dstY - srcY;
+        double len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 1.0) return null;
+
+        double ux = dx / len;
+        double uy = dy / len;
+
+        double arrowLen = 14.0;
+        double arrowW   = 7.0;
+
+        double tipX  = dstX;
+        double tipY  = dstY;
+        double baseX = tipX - ux * arrowLen;
+        double baseY = tipY - uy * arrowLen;
+        double px    = -uy * arrowW;
+        double py    =  ux * arrowW;
+
+        Polygon arrow = new Polygon();
+        arrow.getPoints().addAll(
+                tipX,       tipY,
+                baseX + px, baseY + py,
+                baseX - px, baseY - py);
+        arrow.setFill(fill);
+        return arrow;
+    }
+
+    /**
+     * Returns the centre point of a cell pane in the overlay pane's local
+     * coordinate space, or null if the cell index is invalid.
+     */
+    private double[] cellCenterInOverlay(int cellIndex) {
+        if (cellIndex < 0 || cellIndex >= cellPanes.length) return null;
+        StackPane pane = cellPanes[cellIndex];
+        if (pane == null) return null;
+
+        javafx.geometry.Bounds bounds = pane.localToScene(pane.getBoundsInLocal());
+        double sceneX = bounds.getMinX() + bounds.getWidth()  / 2.0;
+        double sceneY = bounds.getMinY() + bounds.getHeight() / 2.0;
+
+        javafx.geometry.Point2D local = overlayPane.sceneToLocal(sceneX, sceneY);
+        return new double[]{ local.getX(), local.getY() };
+    }
+
     // ── Coordinate helpers ─────────────────────────────────────────────────
 
     public int[] cellnumberToGridIndex(int index) {
@@ -355,7 +484,10 @@ public class BoardGridPane extends GridPane {
         for (MonsterGUI mg : stationedMonsters) mg.setInCell();
 
         // Place tokens — must wait for layout to compute bounds
-        Platform.runLater(() -> placeTokens(player, opponent));
+        Platform.runLater(() -> {
+            placeTokens(player, opponent);
+            drawTransportLines();
+        });
     }
 
     // ── Internal: token placement ──────────────────────────────────────────
@@ -368,7 +500,9 @@ public class BoardGridPane extends GridPane {
         applyStatusToToken(opponentToken, opponent);
 
         // Clear overlay (tokens no longer live there permanently)
+        // Preserve the transport-lines group which is a permanent overlay child
         overlayPane.getChildren().clear();
+        overlayPane.getChildren().add(transportLinesGroup);
 
         // Add tokens directly to their cell panes — no coordinate math needed
         placeTokenInCell(playerToken,   player.getPosition());
@@ -416,7 +550,7 @@ public class BoardGridPane extends GridPane {
 
         boolean forward = toCell > fromCell;
         int current = fromCell;
-        int maxSteps = 24; // safety cap
+        int maxSteps = size; // safety cap
         while (current != toCell && maxSteps-- > 0) {
             current = forward ? current + 1 : current - 1;
             if (current < 0 || current >= size) break; // boundary guard

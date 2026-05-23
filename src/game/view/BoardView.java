@@ -108,7 +108,9 @@ public class BoardView {
                 BorderPane.setMargin(statsPanel, new Insets(0));
 
                 Scene scene = new Scene(root, 1440, 900);
+                scene.getStylesheets().add(getClass().getResource("/game/view/css/monster.css").toExternalForm());
                 URL css = getClass().getResource("/game/view/css/board.css");
+                
                 if (css != null) {
                         scene.getStylesheets().add(css.toExternalForm());
                 } else {
