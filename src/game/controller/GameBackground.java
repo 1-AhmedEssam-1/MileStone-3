@@ -15,6 +15,7 @@ public class GameBackground{
     public GameBackground(){//----- 
         openMusic("/assets/Monsters Inc theme full.mp3");
         backgroundMusic.setCycleCount(MediaPlayer.INDEFINITE);
+        
     }
 
     private void openMusic(String adress) {

@@ -10,13 +10,19 @@ import javafx.stage.Stage;
 public class Main extends Application {
 	GameBackground background;
     private Stage stage;
+    private GamePlay gameplay;
 	@Override
     public void start(Stage primalyStage) {//----- 
         background= new GameBackground();
         // Open start screen properly
         StartScreen startScreen = new StartScreen();
+
         primalyStage=startScreen;
         stage=primalyStage;
+        gameplay= new GamePlay(stage);
+
+        background.pauseMusic();
+
         // ✅ FIXED: now works
         startScreen.getScarerBtn().setOnAction(e -> startGame(Role.SCARER));
         startScreen.getLaugherBtn().setOnAction(e -> startGame(Role.LAUGHER));
@@ -26,8 +32,11 @@ public class Main extends Application {
     private void startGame(Role role) {
         try {
             Game game = new Game(role);
-            BoardView boardView = new BoardView(stage);
-            boardView.show(game);
+
+            gameplay.handleStartGame(role);
+            
+            //BoardView boardView = new BoardView(stage, gameplay , game);
+            //boardView.show();
 
         } catch (Exception ex) {ex.printStackTrace();}
     }

@@ -30,13 +30,13 @@ public class DiceView extends StackPane {
 
         // Set up the graphic view frame
         diceImageView = new ImageView();
-        diceImageView.setFitWidth(50);
-        diceImageView.setFitHeight(50);
+        diceImageView.setFitWidth(75);
+        diceImageView.setFitHeight(75);
         diceImageView.setPreserveRatio(true);  
         diceImageView.setSmooth(true);         
 
         // Start out showing the blank/unknown initial state
-        setDiceImage("dice_blank.png");
+        setDiceImage("dice_1.png");
         getChildren().add(diceImageView);
         
         // 🆕 Warm up and cache the audio player immediately on startup so there is zero delay on click

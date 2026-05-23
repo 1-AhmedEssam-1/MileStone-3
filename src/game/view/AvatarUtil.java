@@ -63,6 +63,7 @@ public class AvatarUtil {
                     iv.setFitHeight(size - 4);
 
                     iv.setPreserveRatio(true);
+                    
 
                     iv.setSmooth(true);
 

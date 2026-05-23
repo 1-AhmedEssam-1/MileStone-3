@@ -3,6 +3,8 @@ package game.view;
 import java.io.IOException;
 
 import game.view.start.GameInstructions;
+import game.view.style.monsters.MonsterGUI;
+import game.view.style.monsters.PlayerMonster;
 import game.controller.GamePlay;
 import game.engine.Role;
 import javafx.animation.*;
@@ -21,7 +23,7 @@ import javafx.util.Duration;
 
 public class StartScreen extends Stage {
 
-    private final GamePlay controller; // Controller link
+    //private final GamePlay controller; // Controller link
 
     private StackPane root;
     private VBox mainLayout;
@@ -121,28 +123,45 @@ public class StartScreen extends Stage {
     }
 
     private void createScatteredMonsterAnimation(Pane pane) {
-        for (int i = 0; i < 15; i++) {
-            Group monster = new Group();
-            Circle face = new Circle(25, Color.web(i % 2 == 0 ? "#5b8fd4" : "#6abf69", 0.2));
-            Circle eye = new Circle(8, Color.WHITE); eye.setOpacity(0.4);
-            Circle pupil = new Circle(3, Color.BLACK); pupil.setOpacity(0.4);
-
-            monster.getChildren().addAll(face, eye, pupil);
-            monster.setLayoutX(Math.random() * 1500 - 200);
-            monster.setLayoutY(Math.random() * 1200 - 200);
-
-            Screen screen = Screen.getPrimary();
-            Rectangle2D bounds = screen.getBounds();
-            double w = bounds.getWidth();
-            double l = bounds.getHeight();
-
-            TranslateTransition tt = new TranslateTransition(Duration.seconds(15 + Math.random() * 10), monster);
-            tt.setByX(Math.random() * w - 200);
-            tt.setByY(Math.random() * l - 200);
-            tt.setCycleCount(Animation.INDEFINITE);
-            tt.setAutoReverse(true);
-            tt.play();
-            pane.getChildren().add(monster);
+        
+    	String[] mons=PlayerMonster.getList();
+        for (int j = 0; j < mons.length; j++) {
+        	double pupilR= Math.random()*12+40;
+			PlayerMonster mon=new PlayerMonster(mons[j],pupilR*2,"#123456");
+			MonsterGUI[] faces=mon.getPlayerList();
+			for (int k = 0; k < faces.length; k++) {
+				StackPane monster = new StackPane();
+	            double faceR= Math.random()*32+66;
+	            int randint= (int)(faceR-20)*9;
+	            Circle face = new Circle(faceR,Color.web("#abf"+randint, 0.2));
+	            
+            	double eyeR= Math.random()*8+39;
+            	Circle eye = new Circle(eyeR, Color.WHITE);
+                eye.setOpacity(0.4);
+                
+				
+				MonsterGUI moni=faces[k];
+				monster.getChildren().addAll(face, eye, moni);
+				monster.setLayoutX(Math.random() * 1500 - 200);
+	            monster.setLayoutY(Math.random() * 1200 - 200);
+	
+	            Screen screen = Screen.getPrimary();
+	            Rectangle2D bounds = screen.getBounds();
+	
+	            double w = bounds.getWidth();
+	            double l = bounds.getHeight();
+	
+	            TranslateTransition tt =new TranslateTransition(Duration.seconds(10 + Math.random() * 10),monster);
+	            tt.setByX(Math.random() * w - 200);
+	            tt.setByY(Math.random() * l - 200);
+	
+	            tt.setCycleCount(Animation.INDEFINITE);
+	            tt.setAutoReverse(true);
+	            tt.play();
+	
+	            pane.getChildren().add(monster);
+				
+			}            
         }
     }
 

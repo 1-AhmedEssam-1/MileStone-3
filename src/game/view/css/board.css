@@ -34,10 +34,13 @@
 }
 
 /* Selected cell ring */
+/* Selected cell ring — Fixed to overlay on top of images */
 .cell-selected {
     -fx-border-color: #ffffff;
     -fx-border-width: 2.5;
     -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.45), 12, 0, 0, 0);
+    /* This adds an inner white glow that images cannot cover up */
+    -fx-effect: innershadow(three-pass-box, #ffffff, 15, 0, 0, 0);
 }
 
 /* ── Special cell colours ─────────────────────────────────────── */
@@ -300,13 +303,13 @@
 
 .bottom-player-name {
     -fx-text-fill:   #f0f6fc;
-    -fx-font-size:   16px;
+    -fx-font-size:   20px;
     -fx-font-weight: bold;
 }
 
 .bottom-role-tag {
     -fx-text-fill:   #8b949e;
-    -fx-font-size:   11px;
+    -fx-font-size:   15px;
 }
 
 .bottom-turn-active {
@@ -316,13 +319,13 @@
 }
 
 .bottom-turn-waiting {
-    -fx-text-fill:   #6e7681;
+    -fx-text-fill:   red;
     -fx-font-size:   11px;
 }
 
 .bottom-turn-label {
     -fx-text-fill:   #8b949e;
-    -fx-font-size:   11px;
+    -fx-font-size:   15px;
 }
 
 /* Player badge pills */
@@ -348,9 +351,16 @@
 .dice-face {
     -fx-background-color: #161b22;
     -fx-border-color:     #30363d;
-    -fx-border-radius:    10;
-    -fx-background-radius: 10;
+    
+    /* ── 🆕 DEEPLY ROUNDED BORDERS ── */
+    -fx-border-radius:     25px;       /* Increased for a clear, premium rolling-die roundness */
+    -fx-background-radius: 16px;       /* Must match the border-radius perfectly */
+    
     -fx-border-width:     2;
+    
+    /* Forces any child layouts or sharp text edges to wrap inside the rounded bounds */
+    -fx-background-clip:   padding-box; 
+    
     -fx-effect:
         dropshadow(gaussian, rgba(0,0,0,0.6), 8, 0.2, 0, 2);
 }
