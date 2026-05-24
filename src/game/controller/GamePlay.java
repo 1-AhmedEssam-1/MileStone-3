@@ -5,9 +5,11 @@ import game.engine.Role;
 import game.engine.cards.Card;
 import game.engine.cells.CardCell;
 import game.engine.cells.Cell;
+import game.engine.monsters.Monster;
 import game.view.BoardView;
 import game.view.DiceView;
 import game.view.StartScreen;
+import game.view.style.monsters.PlayerMonster;
 //import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -90,37 +92,30 @@ public class GamePlay {
 
         try {
             // ── 1. Snapshot BEFORE the engine runs ────────────────────────────
-            game.engine.monsters.Monster mover = gameEngine.getCurrent();   // who is moving
-            int     fromPos      = mover.getPosition();       // where they start
-            int     energyBefore = mover.getEnergy();         // energy before any effects
+            Monster mover        = gameEngine.getCurrent();
+            int     fromPos      = mover.getPosition();
+            int     energyBefore = mover.getEnergy();
 
-            // ── 2. Engine resolves everything (move, cells, cards, turn switch) ─
+            // ── 2. Engine resolves everything ─────────────────────────────────
             gameEngine.playTurn();
 
             // ── 3. Read outcomes ───────────────────────────────────────────────
-            int trueRollResult = gameEngine.getLastDiceRoll();
+            int landingCell=gameEngine.getBoard().getLandingCell();
+            int diceRoll = gameEngine.getLastDiceRoll();
             int toPos          = mover.getPosition();        // engine-resolved destination
-            int landingCell    = game.engine.Board.getLastLandingCell(); // cell after dice, before transport
-
             DiceView diceView = boardView.getDiceView();
 
             // ── 4. Spin the dice face, then walk the token ────────────────────
-            diceView.playRollAnimation(trueRollResult, () -> {
+            diceView.playRollAnimation(diceRoll == 0 ? 1 : diceRoll, () -> {
 
-                // animateTokenMove walks the token cell-by-cell and shows the
-                // floating energy-delta label, then calls our callback.
-                // When landingCell != toPos, a straight-line transport animation
-                // is played for the second leg (conveyor / sock).
-                boardView.getBoard().animateTokenMove(
-                    mover, fromPos, toPos, landingCell, energyBefore,
-                    () -> {
+            boardView.getBoard().animateTokenMove(mover, fromPos, toPos, landingCell, energyBefore,() -> {
                         try {
-                            // ── 5. Card popup (if a card was drawn this turn) ──
-                            game.engine.cards.Card drawnCard =
-                                    game.engine.Board.getLastDrawnCard();
-
+                            // ── 5. Card popup if one was drawn ─────────────────
+                            game.engine.cards.Card drawnCard = game.engine.Board.getLastDrawnCard();
                             if (drawnCard != null) {
+                                // Update the last-drawn card slot in the stats panel
                                 boardView.updateLastDrawnCardSlot(drawnCard);
+
                                 game.view.CardPopup.show(primaryStage, drawnCard, () -> {
                                     boardView.refreshAllViewComponents();
                                     checkForWinCondition();
@@ -128,7 +123,7 @@ public class GamePlay {
                                         isTurnInProgress = false;
                                 });
                             } else {
-                                // ── 6. Normal move — refresh & check win ──────
+                                // ── 6. Normal move ─────────────────────────────
                                 boardView.refreshAllViewComponents();
                                 checkForWinCondition();
                                 if (gameEngine.getWinner() == null)
@@ -145,7 +140,6 @@ public class GamePlay {
             });
 
         } catch (Exception ex) {
-            // playTurn() threw (InvalidMoveException, etc.) — unlock immediately
             System.err.println("Move skipped or rule exception: " + ex.getMessage());
             boardView.showSpamWarningPopup("Invalid Move: " + ex.getMessage());
             boardView.refreshAllViewComponents();
@@ -214,10 +208,10 @@ public class GamePlay {
 
         try {
             gameEngine.usePowerup();
+            PlayerMonster currentMon=(gameEngine.getCurrent()==gameEngine.getPlayer())?
+            		boardView.getBoard().getPlayerToken():boardView.getBoard().getOpponentToken();
+            currentMon.getPlayer().powerUPeffect();
             System.out.println("Power-up is activated successfully by " + gameEngine.getCurrent().getName());
-            if(gameEngine.getCurrent()==gameEngine.getPlayer()) 
-            	boardView.getBoard().getPlayerToken().getPlayer().powerUPeffect();
-            else boardView.getBoard().getPlayerToken().getPlayer().powerUPeffect();
             boardView.refreshAllViewComponents();
 
         } catch (game.engine.exceptions.OutOfEnergyException ex) {

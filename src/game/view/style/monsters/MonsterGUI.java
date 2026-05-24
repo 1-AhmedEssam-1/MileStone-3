@@ -215,7 +215,6 @@ public class MonsterGUI extends StackPane{
         
         public void affect(int amount) {
         // Reset opacity so back-to-back calls always show the label
-        energyEffect.setOpacity(1.0);
         energyEffect.setTranslateY(startYenergyEffect);
 
         if (amount >= 0) {
@@ -251,8 +250,8 @@ public class MonsterGUI extends StackPane{
         }       //monImage.setEffect(harm);
 
         public void freeze(){
-                glow(0);
-                ColorAdjust c = new ColorAdjust();  
+        	glow(0);
+        	ColorAdjust c = new ColorAdjust();  
             c.setBrightness(0.2);
             c.setContrast(0.1);  
             c.setSaturation(0.05);  
@@ -272,7 +271,6 @@ public class MonsterGUI extends StackPane{
         
         public void powerUPeffect(){
                 DropShadow glowing=glow(2.8);
-                powered=true;
                 Bloom bloom = new Bloom();  
                 bloom.setThreshold(0.08);
                 bloom.setInput(glowing);
